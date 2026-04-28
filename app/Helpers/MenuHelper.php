@@ -10,40 +10,39 @@ class MenuHelper
             [
                 'icon' => 'dashboard',
                 'name' => 'Dashboard',
+                'path' => '/dashboard',
+            ],
+            [
+                'icon' => 'task',
+                'name' => 'Catálogo',
                 'subItems' => [
-                    ['name' => 'Ecommerce', 'path' => '/'],
+                    ['name' => 'Categorías',  'path' => '/categories'],
+                    ['name' => 'Proveedores', 'path' => '/suppliers'],
+                    ['name' => 'Productos',   'path' => '/products'],
                 ],
             ],
             [
-                'icon' => 'calendar',
-                'name' => 'Calendar',
-                'path' => '/calendar',
-            ],
-            [
-                'icon' => 'user-profile',
-                'name' => 'User Profile',
-                'path' => '/profile',
-            ],
-            [
-                'name' => 'Forms',
-                'icon' => 'forms',
+                'icon' => 'ecommerce',
+                'name' => 'Inventario',
                 'subItems' => [
-                    ['name' => 'Form Elements', 'path' => '/form-elements', 'pro' => false],
+                    ['name' => 'Compras',     'path' => '/inventory/purchases'],
+                    ['name' => 'Traslados',   'path' => '/inventory/transfers'],
+                    ['name' => 'Ajustes',     'path' => '/inventory/adjustments'],
                 ],
             ],
             [
-                'name' => 'Tables',
-                'icon' => 'tables',
-                'subItems' => [
-                    ['name' => 'Basic Tables', 'path' => '/basic-tables', 'pro' => false]
-                ],
+                'icon' => 'chat',
+                'name' => 'Ventas',
+                'path' => '/sales',
             ],
             [
-                'name' => 'Pages',
-                'icon' => 'pages',
+                'icon' => 'charts',
+                'name' => 'Reportes',
                 'subItems' => [
-                    ['name' => 'Blank Page', 'path' => '/blank', 'pro' => false],
-                    ['name' => '404 Error', 'path' => '/error-404', 'pro' => false]
+                    ['name' => 'Stock actual',    'path' => '/reports/stock'],
+                    ['name' => 'Movimientos',     'path' => '/reports/movements'],
+                    ['name' => 'Compras',         'path' => '/reports/purchases'],
+                    ['name' => 'Ventas',          'path' => '/reports/sales'],
                 ],
             ],
         ];
@@ -53,31 +52,11 @@ class MenuHelper
     {
         return [
             [
-                'icon' => 'charts',
-                'name' => 'Charts',
+                'icon' => 'user-profile',
+                'name' => 'Administración',
                 'subItems' => [
-                    ['name' => 'Line Chart', 'path' => '/line-chart', 'pro' => false],
-                    ['name' => 'Bar Chart', 'path' => '/bar-chart', 'pro' => false]
-                ],
-            ],
-            [
-                'icon' => 'ui-elements',
-                'name' => 'UI Elements',
-                'subItems' => [
-                    ['name' => 'Alerts', 'path' => '/alerts', 'pro' => false],
-                    ['name' => 'Avatar', 'path' => '/avatars', 'pro' => false],
-                    ['name' => 'Badge', 'path' => '/badge', 'pro' => false],
-                    ['name' => 'Buttons', 'path' => '/buttons', 'pro' => false],
-                    ['name' => 'Images', 'path' => '/image', 'pro' => false],
-                    ['name' => 'Videos', 'path' => '/videos', 'pro' => false],
-                ],
-            ],
-            [
-                'icon' => 'authentication',
-                'name' => 'Authentication',
-                'subItems' => [
-                    ['name' => 'Sign In', 'path' => '/signin', 'pro' => false],
-                    ['name' => 'Sign Up', 'path' => '/signup', 'pro' => false],
+                    ['name' => 'Usuarios',   'path' => '/admin/users'],
+                    ['name' => 'Sucursales', 'path' => '/admin/locations'],
                 ],
             ],
         ];
@@ -87,13 +66,13 @@ class MenuHelper
     {
         return [
             [
-                'title' => 'Menu',
-                'items' => self::getMainNavItems()
+                'title' => 'Principal',
+                'items' => self::getMainNavItems(),
             ],
             [
-                'title' => 'Others',
-                'items' => self::getOthersItems()
-            ]
+                'title' => 'Sistema',
+                'items' => self::getOthersItems(),
+            ],
         ];
     }
 

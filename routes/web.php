@@ -1,13 +1,19 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SidebarController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\TransferController;
 use Illuminate\Support\Facades\Route;
 
 // ── TailAdmin UI demo / auth pages ────────────────────────────────────────────
 Route::get('/', function () {
     return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
-})->name('dashboard');
+})->name('home');
 
 Route::get('/signin', function () {
     return view('pages.auth.signin', ['title' => 'Sign In']);
@@ -25,33 +31,35 @@ Route::post('/sidebar/toggle', [SidebarController::class, 'toggle'])->name('side
 // =============================================================================
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(function () {
-    Route::get('/', fn () => null)->name('index');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', fn () => view('pages.dashboard.ecommerce', ['title' => 'Dashboard']))->name('dashboard');
 });
 
-// ── Products ──────────────────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
-    ->prefix('products')
-    ->name('products.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}',      fn () => null)->name('show');
-        Route::get('/{id}/edit', fn () => null)->name('edit');
-        Route::put('/{id}',      fn () => null)->name('update');
-        Route::delete('/{id}',   fn () => null)->name('destroy');
-    });
+// ── Catálogo: Categorías ──────────────────────────────────────────────────────
+Route::middleware(['auth', 'role:master,admin,warehouse_manager'])->group(function () {
+    Route::resource('categories', CategoryController::class);
+});
+
+// ── Catálogo: Proveedores ─────────────────────────────────────────────────────
+Route::middleware(['auth', 'role:master,admin,warehouse_manager'])->group(function () {
+    Route::resource('suppliers', SupplierController::class);
+    Route::patch('suppliers/{supplier}/toggle', [SupplierController::class, 'toggle'])->name('suppliers.toggle');
+});
+
+// ── Catálogo: Productos ───────────────────────────────────────────────────────
+Route::middleware(['auth', 'role:master,admin,warehouse_manager'])->group(function () {
+    Route::resource('products', ProductController::class);
+});
 
 // ── Inventory: Purchases ──────────────────────────────────────────────────────
 Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
     ->prefix('inventory/purchases')
     ->name('inventory.purchases.')
     ->group(function () {
-        Route::get('/',       fn () => null)->name('index');
-        Route::get('/create', fn () => null)->name('create');
-        Route::post('/',      fn () => null)->name('store');
-        Route::get('/{id}',   fn () => null)->name('show');
+        Route::get('/',       [PurchaseController::class, 'index'])->name('index');
+        Route::get('/create', [PurchaseController::class, 'create'])->name('create');
+        Route::post('/',      [PurchaseController::class, 'store'])->name('store');
+        Route::get('/{id}',   [PurchaseController::class, 'show'])->name('show');
     });
 
 // ── Inventory: Transfers ──────────────────────────────────────────────────────
@@ -59,10 +67,11 @@ Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
     ->prefix('inventory/transfers')
     ->name('inventory.transfers.')
     ->group(function () {
-        Route::get('/',       fn () => null)->name('index');
-        Route::get('/create', fn () => null)->name('create');
-        Route::post('/',      fn () => null)->name('store');
-        Route::get('/{id}',   fn () => null)->name('show');
+        Route::get('/stock',  [TransferController::class, 'getAvailableStock'])->name('stock');
+        Route::get('/',       [TransferController::class, 'index'])->name('index');
+        Route::get('/create', [TransferController::class, 'create'])->name('create');
+        Route::post('/',      [TransferController::class, 'store'])->name('store');
+        Route::get('/{id}',   [TransferController::class, 'show'])->name('show');
     });
 
 // ── Inventory: Adjustments ────────────────────────────────────────────────────
@@ -76,16 +85,18 @@ Route::middleware(['auth', 'role:master,admin'])
         Route::get('/{id}',   fn () => null)->name('show');
     });
 
-// ── Sales ─────────────────────────────────────────────────────────────────────
+// ── Sales / POS ───────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'role:master,admin,cashier'])
     ->prefix('sales')
     ->name('sales.')
     ->group(function () {
-        Route::get('/',             fn () => null)->name('index');
-        Route::get('/create',       fn () => null)->name('create');
-        Route::post('/',            fn () => null)->name('store');
-        Route::get('/{id}',         fn () => null)->name('show');
-        Route::post('/{id}/cancel', fn () => null)->name('cancel');
+        // search-product must precede /{id} to avoid route collision
+        Route::get('/search-product',   [SaleController::class, 'searchProduct'])->name('search');
+        Route::get('/',                 [SaleController::class, 'index'])->name('index');
+        Route::get('/create',           [SaleController::class, 'create'])->name('create');
+        Route::post('/',                [SaleController::class, 'store'])->name('store');
+        Route::get('/{id}',             [SaleController::class, 'show'])->name('show');
+        Route::post('/{id}/cancel',     [SaleController::class, 'cancel'])->name('cancel');
     });
 
 // ── Reports ───────────────────────────────────────────────────────────────────
@@ -93,11 +104,10 @@ Route::middleware(['auth'])
     ->prefix('reports')
     ->name('reports.')
     ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/stock',     fn () => null)->name('stock');
-        Route::get('/movements', fn () => null)->name('movements');
-        Route::get('/purchases', fn () => null)->name('purchases');
-        Route::get('/sales',     fn () => null)->name('sales');
+        Route::get('/',             [ReportController::class, 'dashboard'])->name('index');
+        Route::get('/expirations',  [ReportController::class, 'expirations'])->name('expirations');
+        Route::get('/stock',        [ReportController::class, 'stock'])->name('stock');
+        Route::get('/movements',    [ReportController::class, 'movements'])->name('movements');
     });
 
 // ── Admin: Users ──────────────────────────────────────────────────────────────
@@ -125,107 +135,3 @@ Route::middleware(['auth', 'role:master'])
         Route::put('/{id}',      fn () => null)->name('update');
         Route::delete('/{id}',   fn () => null)->name('destroy');
     });
-
-
-// ── Dashboard ─────────────────────────────────────────────────────────────────
-Route::middleware(['auth'])->prefix('dashboard')->name('dashboard.')->group(function () {
-    Route::get('/', fn () => null)->name('index');
-});
-
-// ── Products ──────────────────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
-    ->prefix('products')
-    ->name('products.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}',      fn () => null)->name('show');
-        Route::get('/{id}/edit', fn () => null)->name('edit');
-        Route::put('/{id}',      fn () => null)->name('update');
-        Route::delete('/{id}',   fn () => null)->name('destroy');
-    });
-
-// ── Inventory: Purchases ──────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
-    ->prefix('inventory/purchases')
-    ->name('inventory.purchases.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}',      fn () => null)->name('show');
-    });
-
-// ── Inventory: Transfers ──────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
-    ->prefix('inventory/transfers')
-    ->name('inventory.transfers.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}',      fn () => null)->name('show');
-    });
-
-// ── Inventory: Adjustments ────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin'])
-    ->prefix('inventory/adjustments')
-    ->name('inventory.adjustments.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}',      fn () => null)->name('show');
-    });
-
-// ── Sales ─────────────────────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin,cashier'])
-    ->prefix('sales')
-    ->name('sales.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}',      fn () => null)->name('show');
-        Route::post('/{id}/cancel', fn () => null)->name('cancel');
-    });
-
-// ── Reports ───────────────────────────────────────────────────────────────────
-Route::middleware(['auth'])
-    ->prefix('reports')
-    ->name('reports.')
-    ->group(function () {
-        Route::get('/',           fn () => null)->name('index');
-        Route::get('/stock',      fn () => null)->name('stock');
-        Route::get('/movements',  fn () => null)->name('movements');
-        Route::get('/purchases',  fn () => null)->name('purchases');
-        Route::get('/sales',      fn () => null)->name('sales');
-    });
-
-// ── Admin: Users ──────────────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin'])
-    ->prefix('admin/users')
-    ->name('admin.users.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}/edit', fn () => null)->name('edit');
-        Route::put('/{id}',      fn () => null)->name('update');
-        Route::delete('/{id}',   fn () => null)->name('destroy');
-    });
-
-// ── Admin: Locations ──────────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master'])
-    ->prefix('admin/locations')
-    ->name('admin.locations.')
-    ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}/edit', fn () => null)->name('edit');
-        Route::put('/{id}',      fn () => null)->name('update');
-        Route::delete('/{id}',   fn () => null)->name('destroy');
-    });
-
