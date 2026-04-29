@@ -8,6 +8,8 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SidebarController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransferController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // ── TailAdmin UI demo / auth pages ────────────────────────────────────────────
@@ -17,7 +19,26 @@ Route::get('/', function () {
 
 Route::get('/signin', function () {
     return view('pages.auth.signin', ['title' => 'Sign In']);
-})->name('signin');
+})->middleware('guest')->name('signin');
+
+Route::post('/login', function (Request $request) {
+    $credentials = $request->validate([
+        'email'    => ['required', 'email'],
+        'password' => ['required'],
+    ]);
+    if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $request->session()->regenerate();
+        return redirect()->intended(route('dashboard'));
+    }
+    return back()->withErrors(['email' => 'Las credenciales no son correctas.'])->onlyInput('email');
+})->middleware('guest')->name('login');
+
+Route::post('/logout', function (Request $request) {
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    return redirect()->route('signin');
+})->middleware('auth')->name('logout');
 
 Route::get('/signup', function () {
     return view('pages.auth.signup', ['title' => 'Sign Up']);
