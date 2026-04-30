@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockCache extends Model
 {
+    protected $table = 'stock_cache';
+
     public $timestamps = false;
 
     protected $fillable = [
