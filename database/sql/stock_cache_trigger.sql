@@ -23,13 +23,13 @@ BEGIN
         IF NEW.batch_id IS NOT NULL THEN
             INSERT INTO stock_cache (location_id, product_id, batch_id, quantity)
             VALUES (NEW.from_location_id, NEW.product_id, NEW.batch_id, -NEW.quantity)
-            ON CONFLICT ON CONSTRAINT stock_cache_with_batch_unique
+            ON CONFLICT (location_id, product_id, batch_id) WHERE batch_id IS NOT NULL
             DO UPDATE SET quantity = stock_cache.quantity - NEW.quantity
             RETURNING quantity INTO v_new_qty;
         ELSE
             INSERT INTO stock_cache (location_id, product_id, batch_id, quantity)
             VALUES (NEW.from_location_id, NEW.product_id, NULL, -NEW.quantity)
-            ON CONFLICT ON CONSTRAINT stock_cache_no_batch_unique
+            ON CONFLICT (location_id, product_id) WHERE batch_id IS NULL
             DO UPDATE SET quantity = stock_cache.quantity - NEW.quantity
             RETURNING quantity INTO v_new_qty;
         END IF;
@@ -50,12 +50,12 @@ BEGIN
         IF NEW.batch_id IS NOT NULL THEN
             INSERT INTO stock_cache (location_id, product_id, batch_id, quantity)
             VALUES (NEW.to_location_id, NEW.product_id, NEW.batch_id, NEW.quantity)
-            ON CONFLICT ON CONSTRAINT stock_cache_with_batch_unique
+            ON CONFLICT (location_id, product_id, batch_id) WHERE batch_id IS NOT NULL
             DO UPDATE SET quantity = stock_cache.quantity + NEW.quantity;
         ELSE
             INSERT INTO stock_cache (location_id, product_id, batch_id, quantity)
             VALUES (NEW.to_location_id, NEW.product_id, NULL, NEW.quantity)
-            ON CONFLICT ON CONSTRAINT stock_cache_no_batch_unique
+            ON CONFLICT (location_id, product_id) WHERE batch_id IS NULL
             DO UPDATE SET quantity = stock_cache.quantity + NEW.quantity;
         END IF;
 
