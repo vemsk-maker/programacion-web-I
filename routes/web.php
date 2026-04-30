@@ -53,7 +53,7 @@ Route::post('/sidebar/toggle', [SidebarController::class, 'toggle'])->name('side
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', fn () => view('pages.dashboard.ecommerce', ['title' => 'Dashboard']))->name('dashboard');
+    Route::get('/dashboard', [ReportController::class, 'dashboard'])->name('dashboard');
 });
 
 // ── Catálogo: Categorías ──────────────────────────────────────────────────────
@@ -100,10 +100,10 @@ Route::middleware(['auth', 'role:master,admin'])
     ->prefix('inventory/adjustments')
     ->name('inventory.adjustments.')
     ->group(function () {
-        Route::get('/',       fn () => null)->name('index');
-        Route::get('/create', fn () => null)->name('create');
-        Route::post('/',      fn () => null)->name('store');
-        Route::get('/{id}',   fn () => null)->name('show');
+        Route::get('/',       fn () => redirect()->route('inventory.transfers.index'))->name('index');
+        Route::get('/create', fn () => redirect()->route('inventory.transfers.index'))->name('create');
+        Route::post('/',      fn () => redirect()->route('inventory.transfers.index'))->name('store');
+        Route::get('/{id}',   fn () => redirect()->route('inventory.transfers.index'))->name('show');
     });
 
 // ── Sales / POS ───────────────────────────────────────────────────────────────
@@ -136,12 +136,12 @@ Route::middleware(['auth', 'role:master,admin'])
     ->prefix('admin/users')
     ->name('admin.users.')
     ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}/edit', fn () => null)->name('edit');
-        Route::put('/{id}',      fn () => null)->name('update');
-        Route::delete('/{id}',   fn () => null)->name('destroy');
+        Route::get('/',          fn () => redirect()->route('dashboard'))->name('index');
+        Route::get('/create',    fn () => redirect()->route('dashboard'))->name('create');
+        Route::post('/',         fn () => redirect()->route('dashboard'))->name('store');
+        Route::get('/{id}/edit', fn () => redirect()->route('dashboard'))->name('edit');
+        Route::put('/{id}',      fn () => redirect()->route('dashboard'))->name('update');
+        Route::delete('/{id}',   fn () => redirect()->route('dashboard'))->name('destroy');
     });
 
 // ── Admin: Locations ──────────────────────────────────────────────────────────
@@ -149,10 +149,10 @@ Route::middleware(['auth', 'role:master'])
     ->prefix('admin/locations')
     ->name('admin.locations.')
     ->group(function () {
-        Route::get('/',          fn () => null)->name('index');
-        Route::get('/create',    fn () => null)->name('create');
-        Route::post('/',         fn () => null)->name('store');
-        Route::get('/{id}/edit', fn () => null)->name('edit');
-        Route::put('/{id}',      fn () => null)->name('update');
-        Route::delete('/{id}',   fn () => null)->name('destroy');
+        Route::get('/',          fn () => redirect()->route('dashboard'))->name('index');
+        Route::get('/create',    fn () => redirect()->route('dashboard'))->name('create');
+        Route::post('/',         fn () => redirect()->route('dashboard'))->name('store');
+        Route::get('/{id}/edit', fn () => redirect()->route('dashboard'))->name('edit');
+        Route::put('/{id}',      fn () => redirect()->route('dashboard'))->name('update');
+        Route::delete('/{id}',   fn () => redirect()->route('dashboard'))->name('destroy');
     });

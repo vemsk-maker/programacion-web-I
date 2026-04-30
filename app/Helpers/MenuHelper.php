@@ -39,10 +39,10 @@ class MenuHelper
                 'icon' => 'charts',
                 'name' => 'Reportes',
                 'subItems' => [
+                    ['name' => 'Resumen',         'path' => '/reports'],
+                    ['name' => 'Vencimientos',    'path' => '/reports/expirations'],
                     ['name' => 'Stock actual',    'path' => '/reports/stock'],
                     ['name' => 'Movimientos',     'path' => '/reports/movements'],
-                    ['name' => 'Compras',         'path' => '/reports/purchases'],
-                    ['name' => 'Ventas',          'path' => '/reports/sales'],
                 ],
             ],
         ];
