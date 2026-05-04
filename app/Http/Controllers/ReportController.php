@@ -29,10 +29,11 @@ class ReportController extends Controller
     // =========================================================================
     public function dashboard()
     {
-        $today       = now()->toDateString();
-        $in30        = now()->addDays(30)->toDateString();
+        $today = now()->toDateString();
+        $in30  = now()->addDays(30)->toDateString();
+        $weekStart = now()->startOfWeek()->toDateString();
 
-        // Lotes que vencen en los próximos 30 días y tienen stock > 0
+        // ── Alertas de vencimiento ────────────────────────────────────────────
         $expiringCount = DB::table('batches as b')
             ->join('stock_cache as sc', 'sc.batch_id', '=', 'b.id')
             ->where('sc.quantity', '>', 0)
@@ -41,7 +42,6 @@ class ReportController extends Controller
             ->whereNotNull('b.expiration_date')
             ->count();
 
-        // Lotes ya vencidos con stock > 0 (crítico)
         $expiredCount = DB::table('batches as b')
             ->join('stock_cache as sc', 'sc.batch_id', '=', 'b.id')
             ->where('sc.quantity', '>', 0)
@@ -49,17 +49,50 @@ class ReportController extends Controller
             ->whereNotNull('b.expiration_date')
             ->count();
 
-        // Total productos activos
+        // ── Catálogo ──────────────────────────────────────────────────────────
         $activeProducts = Product::where('active', true)->count();
 
-        // Movimientos de hoy
+        // ── Movimientos de hoy ────────────────────────────────────────────────
         $todayMovements = InventoryMovement::whereDate('created_at', $today)->count();
+
+        // ── Ventas de hoy ─────────────────────────────────────────────────────
+        $salesToday = MovementGroup::where('type', MovementType::Sale)
+            ->whereDate('created_at', $today)
+            ->count();
+
+        $salesTodayAmount = DB::table('documents as d')
+            ->join('movement_groups as mg', 'mg.id', '=', 'd.movement_group_id')
+            ->where('mg.type', 'sale')
+            ->whereDate('mg.created_at', $today)
+            ->sum('d.total_amount');
+
+        // ── Ventas esta semana ────────────────────────────────────────────────
+        $salesWeek = MovementGroup::where('type', MovementType::Sale)
+            ->whereDate('created_at', '>=', $weekStart)
+            ->count();
+
+        // ── Compras de hoy ────────────────────────────────────────────────────
+        $purchasesToday = MovementGroup::where('type', MovementType::Purchase)
+            ->whereDate('created_at', $today)
+            ->count();
+
+        // ── Últimas 8 ventas ──────────────────────────────────────────────────
+        $recentSales = MovementGroup::where('type', MovementType::Sale)
+            ->with(['document', 'user:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get();
 
         return view('reports.dashboard', compact(
             'expiringCount',
             'expiredCount',
             'activeProducts',
-            'todayMovements'
+            'todayMovements',
+            'salesToday',
+            'salesTodayAmount',
+            'salesWeek',
+            'purchasesToday',
+            'recentSales'
         ));
     }
 

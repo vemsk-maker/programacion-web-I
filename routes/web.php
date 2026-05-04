@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Route;
 
 // ── Autenticación y Home ──────────────────────────────────────────────────────
 Route::get('/', function () {
-    return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
 })->name('home');
 
 // Cambio: Ahora la vista de login responde a la ruta /login (GET)
