@@ -149,14 +149,17 @@
 
             <div class="bg-brand-950 relative hidden h-full w-full items-center lg:grid lg:w-1/2 dark:bg-white/5">
                 <div class="z-1 flex items-center justify-center">
-                    <!-- ===== Common Grid Shape Start ===== -->
-                    <x-common.common-grid-shape/>
                     <div class="flex max-w-xs flex-col items-center">
-                        <a href="/" class="mb-4 block">
-                            <img src="./images/logo/auth-logo.svg" alt="Logo" />
+                        <a href="{{ route('home') }}" class="mb-6 block">
+                            <img src="{{ asset('images/logo-ayma.png') }}"
+                                 alt="AYMA Micromercado"
+                                 class="h-40 w-auto drop-shadow-lg" />
                         </a>
-                        <p class="text-center text-gray-400 dark:text-white/60">
-                            Free and Open-Source Tailwind CSS Admin Dashboard Template
+                        <p class="text-center text-base font-bold text-white">
+                            AYMA Micromercado
+                        </p>
+                        <p class="mt-2 text-center text-sm text-gray-400 dark:text-white/60">
+                            Sistema integral de gestión de inventario, ventas y reportes
                         </p>
                     </div>
                 </div>

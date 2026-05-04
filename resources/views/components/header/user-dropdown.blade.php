@@ -1,3 +1,4 @@
+@php $authUser = auth()->user(); @endphp
 <div class="relative" x-data="{
     dropdownOpen: false,
     toggleDropdown() {
@@ -13,11 +14,11 @@
         @click.prevent="toggleDropdown()"
         type="button"
     >
-        <span class="mr-3 overflow-hidden rounded-full h-11 w-11">
-            <img src="/images/user/owner.png" alt="User" />
+        <span class="mr-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#e11d48] text-white font-bold text-base">
+            {{ strtoupper(substr($authUser->name ?? 'U', 0, 1)) }}
         </span>
 
-       <span class="block mr-1 font-medium text-theme-sm">Musharof</span>
+        <span class="block mr-1 font-medium text-theme-sm">{{ $authUser->name ?? 'Usuario' }}</span>
 
         <!-- Chevron Icon -->
         <svg
@@ -45,8 +46,8 @@
     >
         <!-- User Info -->
         <div>
-            <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">Musharof Chowdhury</span>
-            <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">randomuser@pimjo.com</span>
+            <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">{{ $authUser->name ?? 'Usuario' }}</span>
+            <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">{{ $authUser->email ?? '' }}</span>
         </div>
 
         <!-- Menu Items -->

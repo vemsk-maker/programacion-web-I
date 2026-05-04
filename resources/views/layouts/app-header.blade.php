@@ -50,8 +50,7 @@
 
             <!-- Logo (mobile only) -->
             <a href="/" class="xl:hidden">
-                <img class="dark:hidden" src="/images/logo.png" alt="Logo" />
-                <img class="hidden dark:block" src="/images/logo.png" alt="Logo" />
+                <img class="h-9 w-auto" src="{{ asset('images/logo-ayma.png') }}" alt="Logo AYMA" />
             </a>
 
             <!-- Application Menu Toggle (mobile only) -->

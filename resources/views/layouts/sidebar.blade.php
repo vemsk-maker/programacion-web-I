@@ -68,21 +68,21 @@
     <img 
         x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
         class="dark:hidden transition-all duration-300" 
-        src="/images/logo.png" 
+        src="{{ asset('images/logo-ayma.png') }}" 
         alt="Logo AYMA" 
         width="160" 
         height="45" />
     <img
         x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
         class="hidden dark:block transition-all duration-300" 
-        src="/images/logo.png" 
+        src="{{ asset('images/logo-ayma.png') }}" 
         alt="AYMA" 
         width="170" 
         height="48" />
     <!-- Logo Icono (cuando está contraído) -->
     <img 
         x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
-        src="/images/logo-icon.png" 
+        src="{{ asset('images/logo-ayma.png') }}" 
         alt="Logo AYMA" 
         width="38" 
         height="38" 
