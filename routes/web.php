@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdjustmentController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProductController;
@@ -11,49 +12,16 @@ use App\Http\Controllers\SidebarController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticación y Home ──────────────────────────────────────────────────────
-Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : view('landing');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Cambio: Ahora la vista de login responde a la ruta /login (GET)
-Route::get('/login', function () {
-    return view('pages.auth.signin', ['title' => 'Sign In']);
-})->middleware('guest')->name('login');
-
-// Mantenemos /signin como alias opcional si lo necesitas
+Route::get('/login', [HomeController::class, 'showLogin'])->middleware('guest')->name('login');
 Route::get('/signin', fn() => redirect()->route('login'));
-
-Route::post('/login', function (Request $request) {
-    $credentials = $request->validate([
-        'email'    => ['required', 'email'],
-        'password' => ['required'],
-    ]);
-    
-    if (Auth::attempt($credentials, $request->boolean('remember'))) {
-        $request->session()->regenerate();
-        return redirect()->intended(route('dashboard'));
-    }
-    
-    return back()->withErrors(['email' => 'Las credenciales no son correctas.'])->onlyInput('email');
-})->middleware('guest'); // Quitamos el ->name('login') de aquí porque ya lo tiene el GET arriba
-
-Route::post('/logout', function (Request $request) {
-    Auth::logout();
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-    return redirect()->route('login');
-})->middleware('auth')->name('logout');
-
-Route::get('/signup', function () {
-    return view('pages.auth.signup', ['title' => 'Sign Up']);
-})->name('signup');
+Route::post('/login', [HomeController::class, 'login'])->middleware('guest');
+Route::post('/logout', [HomeController::class, 'logout'])->middleware('auth')->name('logout');
+Route::get('/signup', [HomeController::class, 'showSignup'])->name('signup');
 
 // Sidebar state persistence (TailAdmin)
 Route::post('/sidebar/toggle', [SidebarController::class, 'toggle'])->name('sidebar.toggle');
