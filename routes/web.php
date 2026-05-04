@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdjustmentController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReportController;
@@ -8,6 +10,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SidebarController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TransferController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -105,14 +108,14 @@ Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
     });
 
 // ── Inventory: Adjustments ────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master,admin'])
+Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
     ->prefix('inventory/adjustments')
     ->name('inventory.adjustments.')
     ->group(function () {
-        Route::get('/',       fn () => redirect()->route('inventory.transfers.index'))->name('index');
-        Route::get('/create', fn () => redirect()->route('inventory.transfers.index'))->name('create');
-        Route::post('/',       fn () => redirect()->route('inventory.transfers.index'))->name('store');
-        Route::get('/{id}',   fn () => redirect()->route('inventory.transfers.index'))->name('show');
+        Route::get('/',       [AdjustmentController::class, 'index'])->name('index');
+        Route::get('/create', [AdjustmentController::class, 'create'])->name('create');
+        Route::post('/',       [AdjustmentController::class, 'store'])->name('store');
+        Route::get('/{id}',   [AdjustmentController::class, 'show'])->name('show');
     });
 
 // ── Sales / POS ───────────────────────────────────────────────────────────────
@@ -144,23 +147,25 @@ Route::middleware(['auth', 'role:master,admin'])
     ->prefix('admin/users')
     ->name('admin.users.')
     ->group(function () {
-        Route::get('/',          fn () => redirect()->route('dashboard'))->name('index');
-        Route::get('/create',    fn () => redirect()->route('dashboard'))->name('create');
-        Route::post('/',         fn () => redirect()->route('dashboard'))->name('store');
-        Route::get('/{id}/edit', fn () => redirect()->route('dashboard'))->name('edit');
-        Route::put('/{id}',      fn () => redirect()->route('dashboard'))->name('update');
-        Route::delete('/{id}',   fn () => redirect()->route('dashboard'))->name('destroy');
+        Route::get('/',              [UserController::class, 'index'])->name('index');
+        Route::get('/create',        [UserController::class, 'create'])->name('create');
+        Route::post('/',             [UserController::class, 'store'])->name('store');
+        Route::get('/{id}/edit',     [UserController::class, 'edit'])->name('edit');
+        Route::put('/{id}',          [UserController::class, 'update'])->name('update');
+        Route::delete('/{id}',       [UserController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/toggle', [UserController::class, 'toggle'])->name('toggle');
     });
 
 // ── Admin: Locations ──────────────────────────────────────────────────────────
-Route::middleware(['auth', 'role:master'])
+Route::middleware(['auth', 'role:master,admin'])
     ->prefix('admin/locations')
     ->name('admin.locations.')
     ->group(function () {
-        Route::get('/',          fn () => redirect()->route('dashboard'))->name('index');
-        Route::get('/create',    fn () => redirect()->route('dashboard'))->name('create');
-        Route::post('/',         fn () => redirect()->route('dashboard'))->name('store');
-        Route::get('/{id}/edit', fn () => redirect()->route('dashboard'))->name('edit');
-        Route::put('/{id}',      fn () => redirect()->route('dashboard'))->name('update');
-        Route::delete('/{id}',   fn () => redirect()->route('dashboard'))->name('destroy');
+        Route::get('/',              [LocationController::class, 'index'])->name('index');
+        Route::get('/create',        [LocationController::class, 'create'])->name('create');
+        Route::post('/',             [LocationController::class, 'store'])->name('store');
+        Route::get('/{id}/edit',     [LocationController::class, 'edit'])->name('edit');
+        Route::put('/{id}',          [LocationController::class, 'update'])->name('update');
+        Route::delete('/{id}',       [LocationController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/toggle', [LocationController::class, 'toggle'])->name('toggle');
     });
