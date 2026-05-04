@@ -34,7 +34,7 @@
     </header>
 
     {{-- ── Hero ────────────────────────────────────────────────────────────── --}}
-    <section class="relative overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24">
+    <section class="relative overflow-hidden pt-36 pb-16 sm:pt-44 sm:pb-24">
         {{-- Fondo decorativo --}}
         <div class="pointer-events-none absolute inset-0 -z-10">
             <div class="absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-red-50 opacity-60 blur-3xl"></div>
@@ -89,12 +89,9 @@
                 {{-- Logo / Imagen hero --}}
                 <div class="order-1 flex justify-center lg:order-2 lg:justify-end">
                     <div class="relative">
-                        <div class="absolute inset-0 -z-10 scale-110 rounded-[3rem] bg-gradient-to-br from-red-50 to-orange-50 blur-xl"></div>
-                        <div class="rounded-[3rem] bg-white p-10 shadow-2xl shadow-red-100 ring-1 ring-red-100">
-                            <img src="{{ asset('images/logo-ayma.png') }}"
-                                 alt="AYMA Micromercado"
-                                 class="h-56 w-auto object-contain drop-shadow-lg sm:h-72" />
-                        </div>
+                        <img src="{{ asset('images/logo-ayma.png') }}"
+                             alt="AYMA Micromercado"
+                             class="h-56 w-auto object-contain drop-shadow-lg sm:h-72" />
                     </div>
                 </div>
             </div>
