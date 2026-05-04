@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('dashboard')
-        : redirect()->route('login');
+        : view('landing');
 })->name('home');
 
 // Cambio: Ahora la vista de login responde a la ruta /login (GET)
