@@ -12,32 +12,38 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// ── TailAdmin UI demo / auth pages ────────────────────────────────────────────
+// ── Autenticación y Home ──────────────────────────────────────────────────────
 Route::get('/', function () {
     return view('pages.dashboard.ecommerce', ['title' => 'E-commerce Dashboard']);
 })->name('home');
 
-Route::get('/signin', function () {
+// Cambio: Ahora la vista de login responde a la ruta /login (GET)
+Route::get('/login', function () {
     return view('pages.auth.signin', ['title' => 'Sign In']);
-})->middleware('guest')->name('signin');
+})->middleware('guest')->name('login');
+
+// Mantenemos /signin como alias opcional si lo necesitas
+Route::get('/signin', fn() => redirect()->route('login'));
 
 Route::post('/login', function (Request $request) {
     $credentials = $request->validate([
         'email'    => ['required', 'email'],
         'password' => ['required'],
     ]);
+    
     if (Auth::attempt($credentials, $request->boolean('remember'))) {
         $request->session()->regenerate();
         return redirect()->intended(route('dashboard'));
     }
+    
     return back()->withErrors(['email' => 'Las credenciales no son correctas.'])->onlyInput('email');
-})->middleware('guest')->name('login');
+})->middleware('guest'); // Quitamos el ->name('login') de aquí porque ya lo tiene el GET arriba
 
 Route::post('/logout', function (Request $request) {
     Auth::logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
-    return redirect()->route('signin');
+    return redirect()->route('login');
 })->middleware('auth')->name('logout');
 
 Route::get('/signup', function () {
@@ -79,7 +85,8 @@ Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
     ->group(function () {
         Route::get('/',       [PurchaseController::class, 'index'])->name('index');
         Route::get('/create', [PurchaseController::class, 'create'])->name('create');
-        Route::post('/',      [PurchaseController::class, 'store'])->name('store');
+        // Se cambió el POST a '/' para coincidir con la lógica del controlador
+        Route::post('/',       [PurchaseController::class, 'store'])->name('store');
         Route::get('/{id}',   [PurchaseController::class, 'show'])->name('show');
     });
 
@@ -91,7 +98,7 @@ Route::middleware(['auth', 'role:master,admin,warehouse_manager'])
         Route::get('/stock',  [TransferController::class, 'getAvailableStock'])->name('stock');
         Route::get('/',       [TransferController::class, 'index'])->name('index');
         Route::get('/create', [TransferController::class, 'create'])->name('create');
-        Route::post('/',      [TransferController::class, 'store'])->name('store');
+        Route::post('/',       [TransferController::class, 'store'])->name('store');
         Route::get('/{id}',   [TransferController::class, 'show'])->name('show');
     });
 
@@ -102,7 +109,7 @@ Route::middleware(['auth', 'role:master,admin'])
     ->group(function () {
         Route::get('/',       fn () => redirect()->route('inventory.transfers.index'))->name('index');
         Route::get('/create', fn () => redirect()->route('inventory.transfers.index'))->name('create');
-        Route::post('/',      fn () => redirect()->route('inventory.transfers.index'))->name('store');
+        Route::post('/',       fn () => redirect()->route('inventory.transfers.index'))->name('store');
         Route::get('/{id}',   fn () => redirect()->route('inventory.transfers.index'))->name('show');
     });
 
@@ -111,7 +118,6 @@ Route::middleware(['auth', 'role:master,admin,cashier'])
     ->prefix('sales')
     ->name('sales.')
     ->group(function () {
-        // search-product must precede /{id} to avoid route collision
         Route::get('/search-product',   [SaleController::class, 'searchProduct'])->name('search');
         Route::get('/',                 [SaleController::class, 'index'])->name('index');
         Route::get('/create',           [SaleController::class, 'create'])->name('create');

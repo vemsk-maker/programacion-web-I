@@ -1,140 +1,148 @@
 @extends('layouts.app')
 
 @section('content')
-    <x-common.page-breadcrumb pageTitle="Stock Actual — Valorización" />
+    <x-common.page-breadcrumb pageTitle="Stock Actual" />
 
-    {{-- Filters --}}
-    <form method="GET" action="{{ route('reports.stock') }}"
-          class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 dark:border-gray-800 dark:bg-white/[0.03]">
-
-        {{-- Category --}}
-        <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Categoría</label>
-            <div x-data="{ isOptionSelected: {{ $categoryId ? 'true' : 'false' }} }" class="relative z-20">
-                <select name="category_id" @change="isOptionSelected = true"
-                    class="shadow-theme-xs h-10 w-44 appearance-none rounded-lg border border-gray-300 bg-transparent px-3 pr-8 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900"
-                    :class="isOptionSelected ? 'text-gray-800 dark:text-white/90' : 'text-gray-400 dark:text-gray-500'">
-                    <option value="">Todas las categorías</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}" {{ $categoryId == $cat->id ? 'selected' : '' }}
-                            class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">{{ $cat->name }}</option>
-                    @endforeach
-                </select>
-                <span class="pointer-events-none absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-400">
-                    <svg class="stroke-current" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
-            </div>
+    {{-- ── Filtros ── --}}
+    <div class="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-sm">
+        <div class="mb-6 border-b border-gray-50 pb-6">
+            <h3 class="text-2xl font-bold text-[#1e293b]">Stock Actual — Valorización</h3>
+            <p class="text-sm text-gray-500">Inventario disponible por producto y ubicación</p>
         </div>
 
-        {{-- Location --}}
-        <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Ubicación</label>
-            <div x-data="{ isOptionSelected: {{ $locationId ? 'true' : 'false' }} }" class="relative z-20">
-                <select name="location_id" @change="isOptionSelected = true"
-                    class="shadow-theme-xs h-10 w-44 appearance-none rounded-lg border border-gray-300 bg-transparent px-3 pr-8 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900"
-                    :class="isOptionSelected ? 'text-gray-800 dark:text-white/90' : 'text-gray-400 dark:text-gray-500'">
-                    <option value="">Todas las ubicaciones</option>
-                    @foreach($locations as $loc)
-                        <option value="{{ $loc->id }}" {{ $locationId == $loc->id ? 'selected' : '' }}
-                            class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">{{ $loc->name }}</option>
-                    @endforeach
-                </select>
-                <span class="pointer-events-none absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-400">
-                    <svg class="stroke-current" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
+        <form method="GET" action="{{ route('reports.stock') }}"
+              class="flex flex-wrap items-end gap-3">
+
+            {{-- Categoría --}}
+            <div>
+                <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Categoría</label>
+                <div class="relative">
+                    <select name="category_id"
+                        class="h-11 w-48 appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all">
+                        <option value="">Todas las categorías</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}" {{ $categoryId == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
             </div>
-        </div>
 
-        <button type="submit"
-            class="h-10 rounded-lg bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600">
-            Filtrar
-        </button>
-        <a href="{{ route('reports.stock') }}"
-            class="inline-flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-            Limpiar
-        </a>
+            {{-- Ubicación --}}
+            <div>
+                <label class="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-gray-400">Ubicación</label>
+                <div class="relative">
+                    <select name="location_id"
+                        class="h-11 w-48 appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all">
+                        <option value="">Todas las ubicaciones</option>
+                        @foreach($locations as $loc)
+                            <option value="{{ $loc->id }}" {{ $locationId == $loc->id ? 'selected' : '' }}>{{ $loc->name }}</option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+            </div>
 
-        {{-- Export --}}
-        <a href="{{ route('reports.stock', array_merge(request()->query(), ['export' => 1])) }}"
-            class="ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.06]">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Exportar CSV
-        </a>
-    </form>
+            <button type="submit" class="h-11 rounded-xl bg-[#1e293b] px-6 text-sm font-bold text-white hover:bg-[#334155] transition-all">
+                Filtrar
+            </button>
+            <a href="{{ route('reports.stock') }}" class="text-sm font-bold text-gray-400 hover:text-[#e11d48] transition-colors">
+                Limpiar
+            </a>
 
-    {{-- Valuación total (solo roles con costos) --}}
+            <a href="{{ route('reports.stock', array_merge(request()->query(), ['export' => 1])) }}"
+                class="ml-auto flex h-11 items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-all">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Exportar CSV
+            </a>
+        </form>
+    </div>
+
+    {{-- Valorización total (solo roles con costos) --}}
     @if($canCost && $totalValue !== null)
-        <div class="mb-5 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 dark:border-brand-500/20 dark:bg-brand-500/10">
-            <div class="flex items-baseline justify-between">
-                <p class="text-sm font-medium text-brand-700 dark:text-brand-400">Valorización total del inventario</p>
-                <p class="text-2xl font-bold text-brand-800 dark:text-brand-300">
-                    Bs {{ number_format((float) $totalValue, 2) }}
-                </p>
+        <div class="my-5 flex items-center justify-between rounded-[2rem] border border-blue-100 bg-blue-50 px-8 py-5 shadow-sm">
+            <div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-blue-500">Valorización total del inventario</p>
+                @if($locationId || $categoryId)
+                    <p class="mt-0.5 text-xs font-medium text-blue-400">(Filtrado por los criterios seleccionados)</p>
+                @endif
             </div>
-            @if($locationId || $categoryId)
-                <p class="mt-0.5 text-xs text-brand-500 dark:text-brand-500">(Filtrado por los criterios seleccionados)</p>
-            @endif
+            <span class="font-mono text-2xl font-black text-blue-700">
+                Bs. {{ number_format((float) $totalValue, 2) }}
+            </span>
         </div>
+    @else
+        <div class="my-5"></div>
     @endif
 
-    {{-- Table --}}
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+    {{-- Tabla --}}
+    <div class="rounded-[2.5rem] border border-gray-100 bg-white shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-left">
                 <thead>
-                    <tr class="border-b border-gray-100 dark:border-gray-800">
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Producto</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Categoría</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Ubicación</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Cantidad</th>
-                        <th class="px-5 py-3 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">UM</th>
+                    <tr class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        <th class="pb-4 pl-8 pt-6">Producto</th>
+                        <th class="pb-4 pt-6">Categoría</th>
+                        <th class="pb-4 pt-6">Ubicación</th>
+                        <th class="pb-4 pt-6 text-right">Cantidad</th>
+                        <th class="pb-4 pt-6 text-center">UM</th>
                         @if($canCost)
-                            <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Costo Unit.</th>
-                            <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Valor Total</th>
+                            <th class="pb-4 pt-6 text-right">Costo Unit.</th>
+                            <th class="pb-4 pr-8 pt-6 text-right">Valor Total</th>
+                        @else
+                            <th class="pb-4 pr-8 pt-6"></th>
                         @endif
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                <tbody class="divide-y divide-gray-50 border-t border-gray-50">
                     @forelse($rows as $row)
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                            <td class="px-5 py-3 font-medium text-gray-800 dark:text-white/90">
+                        <tr class="group transition-colors hover:bg-gray-50/50">
+                            <td class="py-5 pl-8 text-sm font-bold text-[#1e293b]">
                                 {{ $row->product }}
                             </td>
-                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">
+                            <td class="py-5 text-sm text-gray-500">
                                 {{ $row->category ?? '—' }}
                             </td>
-                            <td class="px-5 py-3 text-gray-600 dark:text-gray-400">
-                                {{ $row->location }}
+                            <td class="py-5">
+                                <span class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-1 text-[10px] font-bold uppercase text-gray-500">
+                                    {{ $row->location }}
+                                </span>
                             </td>
-                            <td class="px-5 py-3 text-right font-medium text-gray-800 dark:text-white/90">
+                            <td class="py-5 text-right font-black text-[#1e293b]">
                                 {{ number_format($row->total_qty, 2) }}
                             </td>
-                            <td class="px-5 py-3 text-center text-xs text-gray-400 dark:text-gray-500">
+                            <td class="py-5 text-center text-xs font-medium text-gray-400">
                                 {{ $row->unit_of_measure ?: '—' }}
                             </td>
                             @if($canCost)
-                                <td class="px-5 py-3 text-right text-gray-600 dark:text-gray-400">
+                                <td class="py-5 text-right font-bold text-[#e11d48]">
                                     @if($row->unit_cost)
-                                        Bs {{ number_format($row->unit_cost, 2) }}
+                                        Bs. {{ number_format($row->unit_cost, 2) }}
                                     @else
-                                        <span class="text-gray-300 dark:text-gray-600">—</span>
+                                        <span class="text-gray-300">—</span>
                                     @endif
                                 </td>
-                                <td class="px-5 py-3 text-right font-medium text-gray-800 dark:text-white/90">
+                                <td class="py-5 pr-8 text-right font-black text-[#1e293b]">
                                     @if($row->unit_cost)
-                                        Bs {{ number_format($row->total_qty * $row->unit_cost, 2) }}
+                                        Bs. {{ number_format($row->total_qty * $row->unit_cost, 2) }}
                                     @else
-                                        <span class="text-gray-300 dark:text-gray-600">—</span>
+                                        <span class="text-gray-300">—</span>
                                     @endif
                                 </td>
+                            @else
+                                <td class="py-5 pr-8"></td>
                             @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canCost ? 7 : 5 }}" class="px-5 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-                                No hay stock registrado con los filtros seleccionados.
+                            <td colspan="{{ $canCost ? 7 : 5 }}" class="py-20 text-center">
+                                <p class="text-sm font-medium italic text-gray-400">No hay stock registrado con los filtros seleccionados.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -143,16 +151,17 @@
         </div>
 
         @if($rows->hasPages())
-            <div class="border-t border-gray-100 px-5 py-4 dark:border-gray-800">
+            <div class="border-t border-gray-50 px-8 py-6">
                 {{ $rows->links() }}
             </div>
         @endif
     </div>
 
-    <div class="mt-4">
+    <div class="mt-8">
         <a href="{{ route('reports.index') }}"
-            class="rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-            ← Volver a Reportes
+           class="inline-flex items-center gap-2 rounded-2xl bg-gray-100 px-8 py-3 text-sm font-bold text-gray-500 transition-all hover:bg-gray-200 hover:text-[#1e293b]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Volver a Reportes
         </a>
     </div>
 @endsection

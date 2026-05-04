@@ -63,16 +63,34 @@
         :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
         'xl:justify-center' :
         'justify-start'">
-        <a href="/">
-            <img x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                class="dark:hidden" src="/images/logo/logo.svg" alt="Logo" width="150" height="40" />
-            <img x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
-                class="hidden dark:block" src="/images/logo/logo-dark.svg" alt="Logo" width="150"
-                height="40" />
-            <img x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
-                src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
-
-        </a>
+       <a href="/" class="flex justify-center w-full py-6">
+    <!-- Logo principal (cuando el sidebar está expandido) -->
+    <img 
+        x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+        class="dark:hidden transition-all duration-300" 
+        src="/images/logo.png" 
+        alt="Logo AYMA" 
+        width="160" 
+        height="45" />
+    <img
+        x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"
+        class="hidden dark:block transition-all duration-300" 
+        src="/images/logo.png" 
+        alt="AYMA" 
+        width="170" 
+        height="48" />
+<
+    <!-- Logo Icono (cuando está contraído) -->
+    <img 
+        x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
+        src="/images/logo-icon.png" 
+        alt="Logo AYMA" 
+        width="38" 
+        height="38" 
+        class="transition-all duration-300" />
+         </a>
+     
+    
     </div>
 
     <!-- Navigation Menu -->
