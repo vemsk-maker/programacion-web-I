@@ -92,9 +92,9 @@
                     <div class="space-y-3">
                         <template x-for="(barcode, i) in barcodes" :key="i">
                             <div class="flex items-center gap-2">
-                                <input type="text" x-model="barcode.barcode" placeholder="Escanear..."
+                                <input type="text" :name="`barcodes[${i}][barcode]`" x-model="barcode.barcode" placeholder="Escanear..."
                                     class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-[#1e293b] focus:border-[#e11d48] outline-none" />
-                                <input type="number" x-model.number="barcode.units_per_scan"
+                                <input type="number" :name="`barcodes[${i}][units_per_scan]`" x-model.number="barcode.units_per_scan"
                                     class="h-11 w-16 rounded-xl border border-gray-200 bg-white text-center text-sm font-black text-[#e11d48] outline-none" />
                                 <button type="button" @click="removeBarcode(i)"
                                     class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-[#e11d48] hover:bg-[#e11d48] hover:text-white transition-all">

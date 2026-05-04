@@ -79,7 +79,6 @@
         alt="AYMA" 
         width="170" 
         height="48" />
-<
     <!-- Logo Icono (cuando está contraído) -->
     <img 
         x-show="!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen"
