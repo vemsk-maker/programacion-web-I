@@ -1,138 +1,125 @@
 @extends('layouts.app')
 
 @section('content')
-    <x-common.page-breadcrumb pageTitle="Productos" />
+<x-common.page-breadcrumb pageTitle="Lista de Productos" />
 
-    {{-- Flash messages --}}
-    @if(session('success'))
-        <div class="mb-4 rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-700 dark:bg-success-500/10 dark:border-success-500/20 dark:text-success-400">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-4 rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-700 dark:bg-error-500/10 dark:border-error-500/20 dark:text-error-400">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        {{-- Header --}}
-        <div class="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Lista de Productos</h3>
-            <div class="flex flex-wrap items-center gap-3">
-                <form method="GET" action="{{ route('products.index') }}" class="flex flex-wrap items-center gap-2">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar producto..."
-                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-10 rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-
-                    {{-- Filter by category --}}
-                    <div x-data="{ isOptionSelected: {{ request('category_id') ? 'true' : 'false' }} }" class="relative z-20">
-                        <select name="category_id"
-                            class="shadow-theme-xs h-10 appearance-none rounded-lg border border-gray-300 bg-transparent px-3 pr-9 text-sm focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                            :class="isOptionSelected ? 'text-gray-800 dark:text-white/90' : 'text-gray-400 dark:text-gray-500'"
-                            @change="isOptionSelected = true">
-                            <option value="">Todas las categorías</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}
-                                    class="dark:bg-gray-900 dark:text-gray-400">
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                            <svg class="stroke-current" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </span>
-                    </div>
-
-                    <button type="submit" class="flex h-10 items-center gap-1.5 rounded-lg bg-gray-100 px-3 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-                        Filtrar
-                    </button>
-                </form>
-                <a href="{{ route('products.create') }}"
-                   class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
-                    + Nuevo Producto
-                </a>
-            </div>
+<div class="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-sm">
+    {{-- Header de la Tabla: Buscador y Botón Nuevo --}}
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-[#1e293b]">Lista de Productos</h2>
+            <p class="text-sm text-gray-500">Gestión de stock e inventario</p>
         </div>
 
-        {{-- Table --}}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-gray-100 dark:border-gray-800">
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Nombre</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Categoría</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Unidad</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Lotes</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Estado</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    @forelse($products as $product)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                            <td class="px-6 py-3 font-medium text-gray-800 dark:text-white/90">
-                                <a href="{{ route('products.show', $product) }}" class="hover:text-brand-500">
-                                    {{ $product->name }}
-                                </a>
-                            </td>
-                            <td class="px-6 py-3 text-gray-500 dark:text-gray-400">
-                                {{ $product->category->name }}
-                            </td>
-                            <td class="px-6 py-3 text-gray-500 dark:text-gray-400">
-                                {{ $product->unit_of_measure }}
-                            </td>
-                            <td class="px-6 py-3">
-                                @if($product->use_batches)
-                                    <span class="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
-                                        PEPS
-                                    </span>
-                                @else
-                                    <span class="text-xs text-gray-400">—</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3">
-                                @if($product->active)
-                                    <span class="inline-flex items-center rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Activo</span>
-                                @else
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">Inactivo</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <a href="{{ route('products.show', $product) }}"
-                                       class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-                                        Ver
-                                    </a>
-                                    <a href="{{ route('products.edit', $product) }}"
-                                       class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-                                        Editar
-                                    </a>
-                                    <form method="POST" action="{{ route('products.destroy', $product) }}"
-                                          onsubmit="return confirm('¿Eliminar este producto?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit"
-                                                class="rounded-lg bg-error-50 px-3 py-1.5 text-xs font-medium text-error-600 hover:bg-error-100 dark:bg-error-500/10 dark:text-error-400 dark:hover:bg-error-500/20">
-                                            Eliminar
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">
-                                No hay productos registrados.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        <div class="flex items-center gap-3">
+            <form action="{{ route('products.index') }}" method="GET" class="flex gap-2">
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Buscar producto..."
+                    class="h-11 w-64 rounded-xl border border-gray-200 px-4 text-sm focus:border-gray-400 focus:outline-none transition-all" />
+                <button type="submit" class="h-11 rounded-xl bg-[#1e293b] px-6 text-sm font-bold text-white hover:bg-[#334155] transition-all">
+                    Buscar
+                </button>
+            </form>
 
-        @if($products->hasPages())
-            <div class="border-t border-gray-100 px-6 py-4 dark:border-gray-800">
-                {{ $products->links() }}
-            </div>
-        @endif
+            <a href="{{ route('products.create') }}" 
+                class="flex h-11 items-center gap-2 rounded-xl bg-[#e11d48] px-6 text-sm font-bold text-white shadow-md transition-all hover:bg-[#be123c] active:scale-95">
+                <span class="text-lg">+</span> Nuevo Producto
+            </a>
+        </div>
     </div>
+
+    {{-- Tabla de Productos --}}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-50 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    <th class="pb-4 pl-4 text-left">Nombre</th>
+                    <th class="pb-4 text-left">Categoría</th>
+                    <th class="pb-4 text-left">Unidad</th>
+                    <th class="pb-4 text-center">PEPS</th>
+                    <th class="pb-4 text-center">Estado</th>
+                    <th class="pb-4 pr-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                @forelse($products as $product)
+                <tr class="group transition-colors hover:bg-gray-50/50">
+                    {{-- Nombre --}}
+                    <td class="py-5 pl-4">
+                        <div class="flex items-center gap-3">
+                            <span class="h-2 w-2 rounded-full bg-orange-500"></span>
+                            <span class="text-sm font-bold text-[#1e293b]">{{ $product->name }}</span>
+                        </div>
+                    </td>
+
+                    {{-- Categoría --}}
+                    <td class="py-5">
+                        <span class="rounded-full bg-gray-100 px-3 py-1 text-[10px] font-bold text-gray-500 uppercase">
+                            {{ $product->category->name ?? 'Sin categoría' }}
+                        </span>
+                    </td>
+
+                    {{-- Unidad --}}
+                    <td class="py-5 text-sm text-gray-500">
+                        {{ $product->unit_of_measure }}
+                    </td>
+
+                    {{-- PEPS --}}
+                    <td class="py-5 text-center">
+                        @if($product->use_batches)
+                            <span class="rounded-md bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-600 border border-blue-100">PEPS</span>
+                        @else
+                            <span class="text-[10px] text-gray-300">No aplica</span>
+                        @endif
+                    </td>
+
+                    {{-- Estado --}}
+                    <td class="py-5 text-center">
+                        @if($product->active)
+                            <span class="text-xs font-medium text-emerald-600">Activo</span>
+                        @else
+                            <span class="text-xs font-medium text-gray-400">Inactivo</span>
+                        @endif
+                    </td>
+
+                    {{-- Acciones --}}
+                    <td class="py-5 pr-4 text-right">
+                        <div class="flex items-center justify-end gap-4">
+                            <a href="{{ route('products.show', $product) }}" 
+                                class="text-[11px] font-bold text-blue-500 hover:text-blue-700 transition-colors uppercase tracking-tighter">
+                                Ver
+                            </a>
+                            
+                            <a href="{{ route('products.edit', $product) }}" 
+                                class="text-[11px] font-bold text-orange-500 hover:text-orange-700 transition-colors uppercase tracking-tighter">
+                                Editar
+                            </a>
+
+                            <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline" 
+                                  onsubmit="return confirm('¿Eliminar este producto?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-[11px] font-bold text-[#e11d48] hover:text-[#be123c] transition-colors uppercase tracking-tighter">
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-sm text-gray-400 italic">
+                        No se encontraron productos en el inventario.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- Paginación --}}
+    <div class="mt-8">
+        {{ $products->links() }}
+    </div>
+</div>
 @endsection

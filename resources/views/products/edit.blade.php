@@ -4,8 +4,14 @@
     <x-common.page-breadcrumb pageTitle="Editar Producto" />
 
     <div class="max-w-2xl">
-        <x-common.component-card title="Datos del Producto">
-            <form method="POST" action="{{ route('products.update', $product) }}" class="space-y-5"
+        {{-- Contenedor principal con estética limpia Ayma --}}
+        <div class="rounded-3xl border border-gray-200 bg-white shadow-sm p-8">
+            <div class="mb-6">
+                <h3 class="text-xl font-bold text-[#1e293b]">Actualizar Información</h3>
+                <p class="text-sm text-gray-500">Modifique los campos necesarios para actualizar el artículo.</p>
+            </div>
+
+            <form method="POST" action="{{ route('products.update', $product) }}" class="space-y-6"
                   x-data="{
                       useBatches: {{ old('use_batches', $product->use_batches) ? 'true' : 'false' }},
                       active: {{ old('active', $product->active) ? 'true' : 'false' }},
@@ -16,122 +22,131 @@
                       addBarcode() { this.barcodes.push({ barcode: '', units_per_scan: 1 }) },
                       removeBarcode(i) { if (this.barcodes.length > 1) this.barcodes.splice(i, 1) }
                   }">
-                @csrf @method('PUT')
+                @csrf 
+                @method('PUT')
 
                 {{-- Name --}}
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                        Nombre <span class="text-error-500">*</span>
+                    <label class="mb-2 block text-sm font-bold text-[#1e293b]">
+                        Nombre del Producto <span class="text-[#e11d48]">*</span>
                     </label>
-                    <input type="text" name="name" value="{{ old('name', $product->name) }}" placeholder="Nombre del producto"
-                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 {{ $errors->has('name') ? 'border-error-400 dark:border-error-500' : 'border-gray-300 dark:border-gray-700' }}" />
-                    @error('name')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror
+                    <input type="text" name="name" value="{{ old('name', $product->name) }}" 
+                        placeholder="Ej: Coca Cola 2L"
+                        class="h-11 w-full rounded-xl border px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('name') ? 'border-red-400' : 'border-gray-200' }}" />
+                    @error('name')<p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Description --}}
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Descripción</label>
-                    <textarea name="description" rows="3" placeholder="Descripción opcional..."
-                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">{{ old('description', $product->description) }}</textarea>
+                    <label class="mb-2 block text-sm font-bold text-[#1e293b]">Descripción</label>
+                    <textarea name="description" rows="2" placeholder="Notas adicionales..."
+                        class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all">{{ old('description', $product->description) }}</textarea>
                 </div>
 
-                {{-- Category --}}
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                        Categoría <span class="text-error-500">*</span>
-                    </label>
-                    <div x-data="{ isOptionSelected: true }" class="relative z-20 bg-transparent">
-                        <select name="category_id"
-                            class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 {{ $errors->has('category_id') ? 'border-error-400 dark:border-error-500' : 'border-gray-300 dark:border-gray-700' }}">
-                            <option value="">— Seleccionar categoría —</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}"
-                                    {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}
-                                    class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">
-                                    {{ $category->name }}{{ $category->parent ? ' (' . $category->parent->name . ')' : '' }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="pointer-events-none absolute top-1/2 right-4 z-30 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                            <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </span>
+                {{-- Category & Unit --}}
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-[#1e293b]">
+                            Categoría <span class="text-[#e11d48]">*</span>
+                        </label>
+                        <div class="relative">
+                            <select name="category_id"
+                                class="h-11 w-full appearance-none rounded-xl border bg-white px-4 pr-11 text-sm text-gray-800 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('category_id') ? 'border-red-400' : 'border-gray-200' }}">
+                                <option value="">— Seleccionar —</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}{{ $category->parent ? ' (' . $category->parent->name . ')' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                        </div>
+                        @error('category_id')<p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
                     </div>
-                    @error('category_id')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror
-                </div>
 
-                {{-- Unit of measure --}}
-                <div>
-                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                        Unidad de Medida <span class="text-error-500">*</span>
-                    </label>
-                    <input type="text" name="unit_of_measure" value="{{ old('unit_of_measure', $product->unit_of_measure) }}"
-                        placeholder="Ej: unidad, kg, litro, caja, bolsa"
-                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 {{ $errors->has('unit_of_measure') ? 'border-error-400 dark:border-error-500' : 'border-gray-300 dark:border-gray-700' }}" />
-                    @error('unit_of_measure')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-[#1e293b]">
+                            Unidad de Medida <span class="text-[#e11d48]">*</span>
+                        </label>
+                        <input type="text" name="unit_of_measure" value="{{ old('unit_of_measure', $product->unit_of_measure) }}"
+                            placeholder="Ej: unidad, kg"
+                            class="h-11 w-full rounded-xl border px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('unit_of_measure') ? 'border-red-400' : 'border-gray-200' }}" />
+                        @error('unit_of_measure')<p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    </div>
                 </div>
 
                 {{-- Toggles --}}
-                <div class="flex flex-wrap gap-8">
+                <div class="flex flex-wrap gap-8 py-2">
                     <div>
-                        <label class="flex cursor-pointer items-center gap-3 text-sm font-medium text-gray-700 select-none dark:text-gray-400">
+                        <label class="flex cursor-pointer items-center gap-3 text-sm font-bold text-[#1e293b] select-none">
                             <div class="relative">
                                 <input type="hidden" name="use_batches" :value="useBatches ? '1' : '0'" />
                                 <input type="checkbox" class="sr-only" @change="useBatches = !useBatches" :checked="useBatches" />
-                                <div class="block h-6 w-11 rounded-full" :class="useBatches ? 'bg-brand-500' : 'bg-gray-200 dark:bg-white/10'"></div>
-                                <div :class="useBatches ? 'translate-x-full' : 'translate-x-0'" class="shadow-theme-sm absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white duration-300 ease-linear"></div>
+                                <div class="block h-6 w-11 rounded-full border border-gray-200 transition-colors" :class="useBatches ? 'bg-[#1e293b]' : 'bg-gray-100'"></div>
+                                <div :class="useBatches ? 'translate-x-5' : 'translate-x-0'" class="absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200"></div>
                             </div>
-                            Control por lotes (PEPS)
+                            Control PEPS (Lotes)
                         </label>
                     </div>
+
                     <div>
-                        <label class="flex cursor-pointer items-center gap-3 text-sm font-medium text-gray-700 select-none dark:text-gray-400">
+                        <label class="flex cursor-pointer items-center gap-3 text-sm font-bold text-[#1e293b] select-none">
                             <div class="relative">
                                 <input type="hidden" name="active" :value="active ? '1' : '0'" />
                                 <input type="checkbox" class="sr-only" @change="active = !active" :checked="active" />
-                                <div class="block h-6 w-11 rounded-full" :class="active ? 'bg-brand-500' : 'bg-gray-200 dark:bg-white/10'"></div>
-                                <div :class="active ? 'translate-x-full' : 'translate-x-0'" class="shadow-theme-sm absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white duration-300 ease-linear"></div>
+                                <div class="block h-6 w-11 rounded-full border border-gray-200 transition-colors" :class="active ? 'bg-emerald-500 border-emerald-600' : 'bg-gray-100'"></div>
+                                <div :class="active ? 'translate-x-5' : 'translate-x-0'" class="absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200"></div>
                             </div>
-                            <span x-text="active ? 'Activo' : 'Inactivo'"></span>
+                            <span x-text="active ? 'Producto Activo' : 'Producto Inactivo'"></span>
                         </label>
                     </div>
                 </div>
 
-                {{-- Barcodes --}}
-                <div>
-                    <div class="mb-3 flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700 dark:text-gray-400">Códigos de Barras</label>
+                {{-- Barcodes section --}}
+                <div class="rounded-2xl border border-gray-100 bg-gray-50/50 p-5">
+                    <div class="mb-4 flex items-center justify-between">
+                        <label class="text-sm font-bold text-[#1e293b]">Códigos de Barras Vinculados</label>
                         <button type="button" @click="addBarcode()"
-                            class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-                            + Agregar código
+                            class="rounded-lg bg-white border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm">
+                            + Añadir Código
                         </button>
                     </div>
                     <div class="space-y-3">
                         <template x-for="(barcode, i) in barcodes" :key="i">
                             <div class="flex items-center gap-3">
-                                <input type="text" :name="`barcodes[${i}][barcode]`" x-model="barcode.barcode"
-                                    placeholder="Código de barras"
-                                    class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-10 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
-                                <input type="number" :name="`barcodes[${i}][units_per_scan]`" x-model.number="barcode.units_per_scan"
-                                    min="1" placeholder="Uds"
-                                    class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-10 w-20 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+                                <div class="relative flex-1">
+                                    <input type="text" :name="`barcodes[${i}][barcode]`" x-model="barcode.barcode"
+                                        placeholder="Escanee o escriba el código"
+                                        class="h-10 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-800 focus:border-gray-400 focus:outline-none" />
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase">Uds:</span>
+                                    <input type="number" :name="`barcodes[${i}][units_per_scan]`" x-model.number="barcode.units_per_scan"
+                                        min="1"
+                                        class="h-10 w-16 rounded-xl border border-gray-200 bg-white px-2 text-center text-sm font-bold text-gray-800 focus:border-gray-400 focus:outline-none" />
+                                </div>
                                 <button type="button" @click="removeBarcode(i)"
-                                    class="h-10 rounded-lg bg-error-50 px-3 text-xs font-medium text-error-600 hover:bg-error-100 dark:bg-error-500/10 dark:text-error-400"
-                                    :disabled="barcodes.length === 1">✕</button>
+                                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                                    :disabled="barcodes.length === 1">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
                             </div>
                         </template>
                     </div>
                 </div>
 
                 {{-- Actions --}}
-                <div class="flex items-center gap-3 pt-2">
-                    <button type="submit" class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
-                        Actualizar
+                <div class="flex items-center gap-4 pt-4">
+                    <button type="submit" class="flex-1 h-12 rounded-xl bg-[#e11d48] text-sm font-bold text-white shadow-md hover:bg-[#be123c] transition-all transform active:scale-[0.98]">
+                        Guardar Cambios
                     </button>
-                    <a href="{{ route('products.show', $product) }}" class="rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
+                    <a href="{{ route('products.show', $product) }}" class="flex-1 h-12 flex items-center justify-center rounded-xl bg-gray-100 text-sm font-bold text-gray-600 hover:bg-gray-200 transition-all">
                         Cancelar
                     </a>
                 </div>
             </form>
-        </x-common.component-card>
+        </div>
     </div>
 @endsection

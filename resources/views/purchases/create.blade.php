@@ -4,7 +4,6 @@
     <x-common.page-breadcrumb pageTitle="Nueva Compra" />
 
     @php
-        // Build Alpine initial lines from old() after a validation failure
         $oldLines = old('lines', []);
         $productsById = $products->keyBy('id');
         $initialLines = collect($oldLines)->map(function ($line) use ($productsById) {
@@ -21,20 +20,27 @@
                 'quantity'        => $line['quantity'] ?? '',
                 'unit_cost'       => $line['unit_cost'] ?? '',
             ];
-        })->toArray();
+        })->values()->toArray();
 
-        // Products as flat JSON for Alpine search (id, name, use_batches, barcodes[])
         $productsJson = $products->map(fn ($p) => [
-            'id'         => $p->id,
-            'name'       => $p->name,
-            'use_batches'=> (bool) $p->use_batches,
-            'barcodes'   => $p->barcodes->pluck('barcode')->toArray(),
-        ])->values();
+            'id'          => $p->id,
+            'name'        => $p->name,
+            'use_batches' => (bool) $p->use_batches,
+            'barcodes'    => $p->barcodes->pluck('barcode')->toArray(),
+        ])->values()->toArray();
     @endphp
+
+    <script>
+        window.__purchaseData = {
+            products: @json($productsJson),
+            lines: @json($initialLines),
+        };
+    </script>
 
     {{-- Flash / validation errors --}}
     @if(session('error'))
-        <div class="mb-4 rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-700 dark:bg-error-500/10 dark:border-error-500/20 dark:text-error-400">
+        <div class="mb-6 flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 px-5 py-3 text-sm font-bold text-[#e11d48]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             {{ session('error') }}
         </div>
     @endif
@@ -43,9 +49,9 @@
         $lineErrorKeys = collect($errors->keys())->filter(fn ($k) => str_starts_with($k, 'lines.'));
     @endphp
     @if($lineErrorKeys->isNotEmpty())
-        <div class="mb-4 rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-700 dark:bg-error-500/10 dark:border-error-500/20 dark:text-error-400">
-            <p class="mb-1 font-medium">Revise los errores en las líneas de producto:</p>
-            <ul class="list-inside list-disc space-y-0.5">
+        <div class="mb-6 rounded-2xl bg-red-50 border border-red-100 px-5 py-4 text-sm text-[#e11d48]">
+            <p class="mb-2 font-bold">Revise los errores en las líneas de producto:</p>
+            <ul class="list-inside list-disc space-y-0.5 font-medium">
                 @foreach($lineErrorKeys as $key)
                     @foreach($errors->get($key) as $msg)
                         <li>{{ $msg }}</li>
@@ -57,8 +63,8 @@
 
     <form method="POST" action="{{ route('inventory.purchases.store') }}"
           x-data="{
-              products: @json($productsJson),
-              lines: @json(count($initialLines) ? $initialLines : []),
+              products: window.__purchaseData.products,
+              lines: window.__purchaseData.lines,
               init() {
                   if (this.lines.length === 0) this.addLine();
               },
@@ -110,106 +116,122 @@
         @csrf
 
         {{-- ── Cabecera ── --}}
-        <div class="grid gap-5 md:grid-cols-2">
-            <x-common.component-card title="Datos de la Compra">
-                <div class="space-y-4">
-                    {{-- Proveedor --}}
+        <div class="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-sm">
+            <div class="mb-6 border-b border-gray-50 pb-6">
+                <h3 class="text-2xl font-bold text-[#1e293b]">Nueva Compra</h3>
+                <p class="text-sm text-gray-500">Complete los datos para registrar el ingreso de mercadería</p>
+            </div>
+
+            <div class="grid gap-6 md:grid-cols-2">
+                {{-- Datos de la Compra --}}
+                <div class="space-y-5">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Datos de la Compra</p>
+
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Proveedor <span class="text-error-500">*</span>
+                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                            Proveedor <span class="text-[#e11d48]">*</span>
                         </label>
-                        <div x-data="{ isOptionSelected: {{ old('supplier_id') ? 'true' : 'false' }} }" class="relative z-20 bg-transparent">
+                        <div class="relative">
                             <select name="supplier_id"
-                                class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border bg-transparent px-4 py-2.5 pr-11 text-sm focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 {{ $errors->has('supplier_id') ? 'border-error-400 dark:border-error-500' : 'border-gray-300 dark:border-gray-700' }}"
-                                :class="isOptionSelected ? 'text-gray-800 dark:text-white/90' : 'text-gray-400 dark:text-gray-500'"
-                                @change="isOptionSelected = true">
+                                class="h-11 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('supplier_id') ? 'border-[#e11d48]' : '' }}">
                                 <option value="">— Seleccionar proveedor —</option>
                                 @foreach($suppliers as $supplier)
-                                    <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}
-                                        class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">{{ $supplier->name }}</option>
+                                    <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
+                                        {{ $supplier->name }}
+                                    </option>
                                 @endforeach
                             </select>
-                            <span class="pointer-events-none absolute top-1/2 right-4 z-30 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                                <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </span>
                         </div>
-                        @error('supplier_id')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror
+                        @error('supplier_id')
+                            <p class="mt-1 text-xs font-bold text-[#e11d48]">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    {{-- Ubicación destino --}}
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                            Ubicación de destino <span class="text-error-500">*</span>
+                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                            Ubicación de destino <span class="text-[#e11d48]">*</span>
                         </label>
-                        <div x-data="{ isOptionSelected: {{ old('location_id') ? 'true' : 'false' }} }" class="relative z-20 bg-transparent">
+                        <div class="relative">
                             <select name="location_id"
-                                class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full appearance-none rounded-lg border bg-transparent px-4 py-2.5 pr-11 text-sm focus:ring-3 focus:outline-hidden dark:bg-gray-900 dark:text-white/90 {{ $errors->has('location_id') ? 'border-error-400 dark:border-error-500' : 'border-gray-300 dark:border-gray-700' }}"
-                                :class="isOptionSelected ? 'text-gray-800 dark:text-white/90' : 'text-gray-400 dark:text-gray-500'"
-                                @change="isOptionSelected = true">
+                                class="h-11 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('location_id') ? 'border-[#e11d48]' : '' }}">
                                 <option value="">— Seleccionar ubicación —</option>
                                 @foreach($locations as $location)
-                                    <option value="{{ $location->id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}
-                                        class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                                    <option value="{{ $location->id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
                                         {{ $location->name }}
                                         ({{ $location->type->value === 'warehouse' ? 'Almacén' : 'Tienda' }})
                                     </option>
                                 @endforeach
                             </select>
-                            <span class="pointer-events-none absolute top-1/2 right-4 z-30 -translate-y-1/2 text-gray-500 dark:text-gray-400">
-                                <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </span>
                         </div>
-                        @error('location_id')<p class="mt-1 text-xs text-error-500">{{ $message }}</p>@enderror
+                        @error('location_id')
+                            <p class="mt-1 text-xs font-bold text-[#e11d48]">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
-            </x-common.component-card>
 
-            <x-common.component-card title="Información Adicional">
-                <div class="space-y-4">
-                    {{-- Referencia del documento --}}
+                {{-- Información Adicional --}}
+                <div class="space-y-5">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Información Adicional</p>
+
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
                             Nro. de Factura / Referencia
                         </label>
                         <input type="text" name="reference_doc" value="{{ old('reference_doc') }}"
                             placeholder="Ej: FAC-001234"
-                            class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
+                            class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all" />
                     </div>
 
-                    {{-- Notas --}}
                     <div>
-                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Notas</label>
+                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">Notas</label>
                         <textarea name="notes" rows="3" placeholder="Observaciones opcionales..."
-                            class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30">{{ old('notes') }}</textarea>
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all">{{ old('notes') }}</textarea>
                     </div>
                 </div>
-            </x-common.component-card>
+            </div>
         </div>
 
         {{-- ── Líneas de productos ── --}}
-        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-            <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-800">
-                <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Productos</h3>
+        <div class="rounded-[2.5rem] border border-gray-100 bg-white shadow-sm">
+
+            <div class="flex items-center justify-between border-b border-gray-50 px-8 py-6">
+                <div>
+                    <h3 class="text-xl font-bold text-[#1e293b]">Productos</h3>
+                    <p class="text-sm text-gray-500">Agregue los ítems de esta compra</p>
+                </div>
                 <button type="button" @click="addLine()"
-                    class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-                    + Agregar producto
+                    class="flex h-11 items-center gap-2 rounded-xl bg-[#1e293b] px-6 text-sm font-bold text-white hover:bg-[#334155] transition-all active:scale-95">
+                    <span class="text-lg">+</span> Agregar producto
                 </button>
             </div>
 
-            <div class="divide-y divide-gray-100 dark:divide-gray-800">
+            <div class="divide-y divide-gray-50">
                 <template x-for="(line, i) in lines" :key="i">
-                    <div class="relative px-6 py-5">
-                        {{-- Remove button --}}
-                        <button type="button" @click="removeLine(i)"
-                            class="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full bg-error-50 text-xs text-error-500 hover:bg-error-100 dark:bg-error-500/10 dark:hover:bg-error-500/20"
-                            :class="lines.length === 1 ? 'opacity-30 cursor-not-allowed' : ''"
-                            :disabled="lines.length === 1">✕</button>
+                    <div class="relative px-8 py-6">
 
-                        <div class="grid gap-4 pr-10">
-                            {{-- Product search --}}
+                        <div class="mb-4 flex items-center justify-between">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400"
+                                  x-text="`Producto #${i + 1}`"></span>
+                            <button type="button" @click="removeLine(i)"
+                                class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-400 hover:bg-red-50 hover:text-[#e11d48] transition-all"
+                                :class="lines.length === 1 ? 'opacity-30 cursor-not-allowed' : ''"
+                                :disabled="lines.length === 1">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                Eliminar
+                            </button>
+                        </div>
+
+                        <div class="grid gap-5">
+                            {{-- Búsqueda de producto --}}
                             <div>
-                                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                    Producto <span class="text-error-500">*</span>
+                                <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                    Producto <span class="text-[#e11d48]">*</span>
                                 </label>
                                 <div class="relative" @click.outside="line.showResults = false">
                                     <input type="text"
@@ -218,58 +240,57 @@
                                         @focus="if(line.search.length > 0) searchProduct(i)"
                                         placeholder="Buscar por nombre o código de barras..."
                                         autocomplete="off"
-                                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
+                                        class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all" />
 
-                                    {{-- Hidden product_id for form submission --}}
                                     <input type="hidden" :name="`lines[${i}][product_id]`" :value="line.product_id" />
 
-                                    {{-- Search dropdown --}}
                                     <div x-show="line.showResults"
-                                         class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                                         class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-lg">
                                         <template x-for="result in line.results" :key="result.id">
                                             <button type="button"
                                                 @click="selectProduct(i, result)"
-                                                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.05]">
-                                                <span class="flex-1" x-text="result.name"></span>
+                                                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                                <span class="flex-1 font-semibold" x-text="result.name"></span>
                                                 <span x-show="result.use_batches"
-                                                    class="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                                                    class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-gray-500">
                                                     PEPS
                                                 </span>
                                             </button>
                                         </template>
                                     </div>
                                 </div>
-                                {{-- Show selected product name as confirmation --}}
+
                                 <p x-show="line.product_id && !line.showResults"
-                                   class="mt-1 text-xs text-success-600 dark:text-success-400">
+                                   class="mt-1.5 text-xs font-bold text-emerald-600">
                                     ✓ <span x-text="line.product_name"></span>
                                 </p>
                             </div>
 
-                            {{-- Batch fields (only when use_batches=true) --}}
-                            <div x-show="line.use_batches" class="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Código de Lote <span class="text-error-500">*</span>
-                                    </label>
-                                    <input type="text"
-                                        :name="`lines[${i}][batch_code]`"
-                                        x-model="line.batch_code"
-                                        placeholder="Ej: LOT-2024-001"
-                                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
+                            {{-- Campos de lote --}}
+                            <template x-if="line.use_batches">
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                            Código de Lote <span class="text-[#e11d48]">*</span>
+                                        </label>
+                                        <input type="text"
+                                            :name="`lines[${i}][batch_code]`"
+                                            x-model="line.batch_code"
+                                            placeholder="Ej: LOT-2024-001"
+                                            class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                            Fecha de Vencimiento <span class="text-[#e11d48]">*</span>
+                                        </label>
+                                        <input type="date"
+                                            :name="`lines[${i}][expiration_date]`"
+                                            x-model="line.expiration_date"
+                                            class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Fecha de Vencimiento <span class="text-error-500">*</span>
-                                    </label>
-                                    <input type="date"
-                                        :name="`lines[${i}][expiration_date]`"
-                                        x-model="line.expiration_date"
-                                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
-                                </div>
-                            </div>
+                            </template>
 
-                            {{-- Hidden batch fields when use_batches=false (submit empty so keys exist) --}}
                             <template x-if="!line.use_batches">
                                 <div>
                                     <input type="hidden" :name="`lines[${i}][batch_code]`" value="" />
@@ -277,31 +298,31 @@
                                 </div>
                             </template>
 
-                            {{-- Quantity, Cost, Subtotal --}}
+                            {{-- Cantidad, Costo, Subtotal --}}
                             <div class="grid gap-4 sm:grid-cols-3">
                                 <div>
-                                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Cantidad <span class="text-error-500">*</span>
+                                    <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                        Cantidad <span class="text-[#e11d48]">*</span>
                                     </label>
                                     <input type="number" step="0.01" min="0.01"
                                         :name="`lines[${i}][quantity]`"
                                         x-model.number="line.quantity"
                                         placeholder="0.00"
-                                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+                                        class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                                        Costo Unitario (Bs.) <span class="text-error-500">*</span>
+                                    <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                        Costo Unitario (Bs.) <span class="text-[#e11d48]">*</span>
                                     </label>
                                     <input type="number" step="0.01" min="0"
                                         :name="`lines[${i}][unit_cost]`"
                                         x-model.number="line.unit_cost"
                                         placeholder="0.00"
-                                        class="shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
+                                        class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
                                 </div>
                                 <div>
-                                    <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Subtotal</label>
-                                    <div class="flex h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm font-medium text-gray-800 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90">
+                                    <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">Subtotal</label>
+                                    <div class="flex h-11 items-center rounded-xl border border-gray-100 bg-gray-50/50 px-4 text-sm font-bold text-[#1e293b]">
                                         Bs. <span class="ml-1" x-text="lineSubtotal(line)">0.00</span>
                                     </div>
                                 </div>
@@ -311,23 +332,23 @@
                 </template>
             </div>
 
-            {{-- Total footer --}}
-            <div class="flex items-center justify-end gap-4 border-t border-gray-100 px-6 py-4 dark:border-gray-800">
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total de la compra:</span>
-                <span class="text-xl font-semibold text-gray-900 dark:text-white">
+            {{-- Total --}}
+            <div class="flex items-center justify-end gap-4 rounded-b-[2.5rem] border-t border-gray-50 bg-gray-50/30 px-8 py-5">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total de la compra:</span>
+                <span class="font-mono text-2xl font-black text-[#1e293b]">
                     Bs. <span x-text="total">0.00</span>
                 </span>
             </div>
         </div>
 
-        {{-- ── Actions ── --}}
+        {{-- ── Acciones ── --}}
         <div class="flex items-center gap-3">
             <button type="submit"
-                class="rounded-lg bg-brand-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
+                class="flex h-11 items-center gap-2 rounded-xl bg-[#e11d48] px-8 text-sm font-bold text-white shadow-md transition-all hover:bg-[#be123c] active:scale-95">
                 Registrar Compra
             </button>
             <a href="{{ route('inventory.purchases.index') }}"
-               class="rounded-lg bg-gray-100 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
+               class="flex h-11 items-center rounded-xl bg-gray-100 px-8 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-[#1e293b] transition-all">
                 Cancelar
             </a>
         </div>

@@ -1,147 +1,156 @@
 @extends('layouts.app')
 
 @section('content')
-    <x-common.page-breadcrumb pageTitle="Historial de Ventas" />
+    <x-common.page-breadcrumb pageTitle="Ventas" />
 
     {{-- Flash --}}
     @if(session('success'))
-        <div class="mb-4 rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-700 dark:bg-success-500/10 dark:border-success-500/20 dark:text-success-400">
+        <div class="mb-6 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-3 text-sm font-bold text-emerald-700">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
             {{ session('success') }}
         </div>
     @endif
     @if(session('error'))
-        <div class="mb-4 rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-700 dark:bg-error-500/10 dark:border-error-500/20 dark:text-error-400">
+        <div class="mb-6 flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 px-5 py-3 text-sm font-bold text-[#e11d48]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             {{ session('error') }}
         </div>
     @endif
 
-    {{-- Filters --}}
-    <form method="GET" action="{{ route('sales.index') }}"
-          class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 dark:border-gray-800 dark:bg-white/[0.03]">
+    <div class="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-sm">
 
-        <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Desde</label>
-            <input type="date" name="date_from" value="{{ request('date_from', today()->toDateString()) }}"
-                class="shadow-theme-xs h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
-        </div>
-
-        <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Hasta</label>
-            <input type="date" name="date_to" value="{{ request('date_to') }}"
-                class="shadow-theme-xs h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" />
-        </div>
-
-        @if($locations->isNotEmpty())
+        {{-- Header + filtros --}}
+        <div class="mb-8 flex flex-wrap items-center justify-between gap-6 border-b border-gray-50 pb-6">
             <div>
-                <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Sucursal</label>
-                <div x-data="{ isOptionSelected: {{ request('location_id') ? 'true' : 'false' }} }" class="relative z-20">
-                    <select name="location_id" @change="isOptionSelected = true"
-                        class="shadow-theme-xs h-10 w-44 appearance-none rounded-lg border border-gray-300 bg-transparent px-3 pr-8 text-sm focus:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-gray-900"
-                        :class="isOptionSelected ? 'text-gray-800 dark:text-white/90' : 'text-gray-400 dark:text-gray-500'">
-                        <option value="">Todas</option>
-                        @foreach($locations as $loc)
-                            <option value="{{ $loc->id }}" {{ request('location_id') == $loc->id ? 'selected' : '' }}
-                                class="text-gray-700 dark:bg-gray-900 dark:text-gray-400">{{ $loc->name }}</option>
-                        @endforeach
-                    </select>
-                    <span class="pointer-events-none absolute top-1/2 right-2.5 z-30 -translate-y-1/2 text-gray-400">
-                        <svg class="stroke-current" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </span>
-                </div>
+                <h3 class="text-2xl font-bold text-[#1e293b]">Historial de Ventas</h3>
+                <p class="text-sm text-gray-500">Registro de todas las transacciones</p>
             </div>
-        @endif
 
-        <button type="submit"
-            class="h-10 rounded-lg bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600">
-            Filtrar
-        </button>
-        <a href="{{ route('sales.index') }}"
-            class="h-10 inline-flex items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
-            Limpiar
-        </a>
+            <div class="flex flex-wrap items-center gap-3">
+                <form method="GET" action="{{ route('sales.index') }}" class="flex flex-wrap items-center gap-3">
 
-        <div class="ml-auto">
-            <a href="{{ route('sales.create') }}"
-                class="h-10 inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 text-sm font-medium text-white hover:bg-brand-600">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Nueva Venta (POS)
-            </a>
+                    {{-- Rango de fechas --}}
+                    <div class="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/50 px-3">
+                        <input type="date" name="date_from" value="{{ request('date_from', today()->toDateString()) }}"
+                            class="h-10 bg-transparent text-sm text-gray-700 focus:outline-none" />
+                        <span class="text-gray-400">/</span>
+                        <input type="date" name="date_to" value="{{ request('date_to') }}"
+                            class="h-10 bg-transparent text-sm text-gray-700 focus:outline-none" />
+                    </div>
+
+                    {{-- Sucursal --}}
+                    @if($locations->isNotEmpty())
+                        <div x-data="{ isOptionSelected: {{ request('location_id') ? 'true' : 'false' }} }" class="relative h-11 w-48">
+                            <select name="location_id"
+                                class="h-full w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all"
+                                @change="isOptionSelected = true">
+                                <option value="">Todas las sucursales</option>
+                                @foreach($locations as $loc)
+                                    <option value="{{ $loc->id }}" {{ request('location_id') == $loc->id ? 'selected' : '' }}>
+                                        {{ $loc->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                        </div>
+                    @endif
+
+                    <button type="submit" class="h-11 rounded-xl bg-[#1e293b] px-6 text-sm font-bold text-white hover:bg-[#334155] transition-all">
+                        Filtrar
+                    </button>
+
+                    @if(request()->hasAny(['date_from', 'date_to', 'location_id']))
+                        <a href="{{ route('sales.index') }}" class="text-sm font-bold text-gray-400 hover:text-[#e11d48] transition-colors">
+                            Limpiar
+                        </a>
+                    @endif
+                </form>
+
+                <div class="h-8 w-px bg-gray-100 mx-2"></div>
+
+                <a href="{{ route('sales.create') }}"
+                   class="flex h-11 items-center gap-2 rounded-xl bg-[#e11d48] px-6 text-sm font-bold text-white shadow-md transition-all hover:bg-[#be123c] active:scale-95">
+                    <span class="text-lg">+</span> Nueva Venta (POS)
+                </a>
+            </div>
         </div>
-    </form>
 
-    {{-- Table --}}
-    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        {{-- Tabla --}}
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-left">
                 <thead>
-                    <tr class="border-b border-gray-100 dark:border-gray-800">
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Recibo</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Hora</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Cliente</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Sucursal</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Cajero</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Total</th>
-                        <th class="px-5 py-3 text-center text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Estado</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Acciones</th>
+                    <tr class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        <th class="pb-4 pl-4">Recibo</th>
+                        <th class="pb-4">Fecha / Hora</th>
+                        <th class="pb-4">Cliente</th>
+                        <th class="pb-4">Sucursal</th>
+                        <th class="pb-4">Cajero</th>
+                        <th class="pb-4 text-right">Total</th>
+                        <th class="pb-4 text-center">Estado</th>
+                        <th class="pb-4 pr-4 text-right">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                <tbody class="divide-y divide-gray-50 border-t border-gray-50">
                     @forelse($sales as $sale)
                         @php
                             $doc      = $sale->document;
                             $location = $sale->movements->first()?->fromLocation;
                             $status   = $doc?->status;
                         @endphp
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                            <td class="px-5 py-3 font-mono text-xs font-medium text-gray-800 dark:text-white/90">
-                                {{ $doc?->doc_number ?? '—' }}
+                        <tr class="group transition-colors hover:bg-gray-50/50">
+                            <td class="py-5 pl-4">
+                                <span class="font-mono text-xs font-bold text-gray-400">{{ $doc?->doc_number ?? '—' }}</span>
                             </td>
-                            <td class="px-5 py-3 text-gray-500 dark:text-gray-400">
-                                {{ $sale->created_at->format('H:i') }}
-                                <span class="block text-xs text-gray-400">{{ $sale->created_at->format('d/m/Y') }}</span>
+                            <td class="py-5">
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-[#1e293b]">{{ $sale->created_at->format('d/m/Y') }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ $sale->created_at->format('H:i') }}</span>
+                                </div>
                             </td>
-                            <td class="px-5 py-3 text-gray-700 dark:text-gray-300">
-                                {{ $doc?->client_name ?: '—' }}
+                            <td class="py-5">
+                                <span class="text-sm font-semibold text-gray-700">{{ $doc?->client_name ?: '—' }}</span>
                                 @if($doc?->client_nit)
-                                    <span class="block text-xs text-gray-400">{{ $doc->client_nit }}</span>
+                                    <span class="block text-[10px] text-gray-400">{{ $doc->client_nit }}</span>
                                 @endif
                             </td>
-                            <td class="px-5 py-3 text-gray-600 dark:text-gray-400">
-                                {{ $location?->name ?? '—' }}
+                            <td class="py-5">
+                                <span class="inline-flex items-center rounded-lg bg-gray-100 px-3 py-1 text-[10px] font-bold text-gray-500 uppercase">
+                                    {{ $location?->name ?? '—' }}
+                                </span>
                             </td>
-                            <td class="px-5 py-3 text-gray-600 dark:text-gray-400">
-                                {{ $sale->user?->name ?? '—' }}
+                            <td class="py-5 text-sm text-gray-500">{{ $sale->user?->name ?? '—' }}</td>
+                            <td class="py-5 text-right font-bold text-[#1e293b]">
+                                Bs. {{ number_format($doc?->total_amount ?? 0, 2) }}
                             </td>
-                            <td class="px-5 py-3 text-right font-medium text-gray-800 dark:text-white/90">
-                                Bs {{ number_format($doc?->total_amount ?? 0, 2) }}
-                            </td>
-                            <td class="px-5 py-3 text-center">
+                            <td class="py-5 text-center">
                                 @if($status?->value === 'open')
-                                    <span class="inline-flex items-center rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">
+                                    <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-600">
                                         Abierto
                                     </span>
                                 @elseif($status?->value === 'cancelled')
-                                    <span class="inline-flex items-center rounded-full bg-error-50 px-2.5 py-0.5 text-xs font-medium text-error-600 dark:bg-error-500/10 dark:text-error-400">
+                                    <span class="inline-flex items-center rounded-lg bg-red-50 px-2.5 py-1 text-[10px] font-black uppercase text-[#e11d48]">
                                         Cancelado
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-white/10 dark:text-gray-400">
+                                    <span class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-1 text-[10px] font-black uppercase text-gray-500">
                                         {{ $status?->value ?? '—' }}
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-5 py-3 text-right">
+                            <td class="py-5 pr-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <a href="{{ route('sales.show', $sale->id) }}"
-                                        class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-400 dark:hover:bg-white/20">
-                                        Ver
+                                        class="text-[11px] font-bold text-blue-500 hover:text-blue-700 transition-colors uppercase tracking-tighter">
+                                        Ver Detalle
                                     </a>
                                     @if(auth()->user()->isAdmin() && $status?->value === 'open')
                                         <form method="POST" action="{{ route('sales.cancel', $sale->id) }}"
                                             onsubmit="return confirm('¿Cancelar venta {{ $doc?->doc_number }}? El stock se revertirá.')">
                                             @csrf
                                             <button type="submit"
-                                                class="rounded-lg bg-error-50 px-3 py-1.5 text-xs font-medium text-error-600 hover:bg-error-100 dark:bg-error-500/10 dark:text-error-400 dark:hover:bg-error-500/20">
+                                                class="text-[11px] font-bold text-[#e11d48] hover:text-[#be123c] transition-colors uppercase tracking-tighter">
                                                 Cancelar
                                             </button>
                                         </form>
@@ -151,8 +160,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-5 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-                                No hay ventas registradas en este período.
+                            <td colspan="8" class="py-20 text-center">
+                                <p class="text-sm font-medium italic text-gray-400">No hay ventas registradas en este período.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -161,7 +170,7 @@
         </div>
 
         @if($sales->hasPages())
-            <div class="border-t border-gray-100 px-5 py-4 dark:border-gray-800">
+            <div class="mt-8 border-t border-gray-50 pt-6">
                 {{ $sales->links() }}
             </div>
         @endif

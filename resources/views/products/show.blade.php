@@ -3,9 +3,9 @@
 @section('content')
     <x-common.page-breadcrumb pageTitle="Detalle del Producto" />
 
-    {{-- Flash --}}
+    {{-- Flash - Estilo Ayma --}}
     @if(session('success'))
-        <div class="mb-4 rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-700 dark:bg-success-500/10 dark:border-success-500/20 dark:text-success-400">
+        <div class="mb-6 rounded-2xl bg-emerald-50 border border-emerald-100 px-5 py-4 text-sm font-bold text-emerald-600 shadow-sm">
             {{ session('success') }}
         </div>
     @endif
@@ -13,97 +13,101 @@
     <div class="grid gap-6 lg:grid-cols-3">
         {{-- Main info --}}
         <div class="lg:col-span-2 space-y-6">
-            <x-common.component-card :title="$product->name">
-                <div class="space-y-3 text-sm">
+            {{-- Forzamos el contenedor blanco y limpio --}}
+            <div class="rounded-3xl bg-white p-8 border border-gray-100 shadow-sm">
+                <h2 class="text-2xl font-black text-[#1e293b] mb-4">{{ $product->name }}</h2>
+                
+                <div class="space-y-4 text-sm">
                     @if($product->description)
-                        <p class="text-gray-600 dark:text-gray-400">{{ $product->description }}</p>
+                        <p class="text-gray-500 font-medium leading-relaxed">{{ $product->description }}</p>
                     @endif
-                    <div class="grid grid-cols-2 gap-4 pt-2">
+                    
+                    <div class="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                         <div>
-                            <span class="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Categoría</span>
-                            <p class="mt-0.5 text-gray-700 dark:text-gray-300">{{ $product->category->name }}</p>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-[#1e293b]/50">Categoría</span>
+                            <p class="mt-1 text-sm font-bold text-[#1e293b]">{{ $product->category->name }}</p>
                         </div>
                         <div>
-                            <span class="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Unidad de Medida</span>
-                            <p class="mt-0.5 text-gray-700 dark:text-gray-300">{{ $product->unit_of_measure }}</p>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-[#1e293b]/50">Unidad de Medida</span>
+                            <p class="mt-1 text-sm font-bold text-[#1e293b]">{{ $product->unit_of_measure }}</p>
                         </div>
                         <div>
-                            <span class="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Control por Lotes</span>
-                            <p class="mt-0.5">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-[#1e293b]/50">Control por Lotes</span>
+                            <p class="mt-1 text-sm font-bold">
                                 @if($product->use_batches)
-                                    <span class="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">PEPS activo</span>
+                                    <span class="inline-flex items-center rounded-lg bg-[#e11d48]/10 px-2.5 py-1 text-[10px] font-black uppercase text-[#e11d48]">PEPS activo</span>
                                 @else
-                                    <span class="text-gray-500 dark:text-gray-400">Sin control de lotes</span>
+                                    <span class="text-gray-400">Sin control</span>
                                 @endif
                             </p>
                         </div>
                         <div>
-                            <span class="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Estado</span>
-                            <p class="mt-0.5">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-[#1e293b]/50">Estado</span>
+                            <p class="mt-1 text-sm font-bold">
                                 @if($product->active)
-                                    <span class="inline-flex items-center rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Activo</span>
+                                    <span class="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-600">Activo</span>
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">Inactivo</span>
+                                    <span class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-1 text-[10px] font-black uppercase text-gray-500">Inactivo</span>
                                 @endif
                             </p>
                         </div>
                     </div>
                 </div>
-                <div class="mt-5 flex items-center gap-3">
+
+                {{-- Botones de Acción --}}
+                <div class="mt-8 flex items-center gap-3">
                     <a href="{{ route('products.edit', $product) }}"
-                       class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">
-                        Editar
+                       class="rounded-2xl bg-[#e11d48] px-6 py-3 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-500/20 hover:bg-[#be123c] transition-all active:scale-95">
+                        Editar Producto
                     </a>
                     <a href="{{ route('products.index') }}"
-                       class="rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20">
+                       class="rounded-2xl bg-gray-100 px-6 py-3 text-[11px] font-black uppercase tracking-widest text-gray-500 hover:bg-gray-200 transition-all">
                         Volver
                     </a>
                 </div>
-            </x-common.component-card>
+            </div>
 
             {{-- Stock by location --}}
-            <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-                <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-800">
-                    <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Stock por Ubicación</h3>
+            <div class="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                <div class="border-b border-gray-50 px-8 py-5">
+                    <h3 class="text-xs font-black uppercase tracking-[2px] text-[#1e293b]">Stock por Ubicación</h3>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                <div class="overflow-x-auto px-4 pb-4">
+                    <table class="w-full">
                         <thead>
-                            <tr class="border-b border-gray-100 dark:border-gray-800">
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Ubicación</th>
+                            <tr class="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                <th class="px-4 py-4 text-left">Ubicación</th>
                                 @if($product->use_batches)
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Lote</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Vencimiento</th>
+                                    <th class="px-4 py-4 text-left">Lote</th>
+                                    <th class="px-4 py-4 text-left">Vencimiento</th>
                                 @endif
-                                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Cantidad</th>
+                                <th class="px-4 py-4 text-right">Cantidad</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody class="divide-y divide-gray-50">
                             @forelse($stock as $item)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                                    <td class="px-6 py-3 text-gray-700 dark:text-gray-300">{{ $item->location->name }}</td>
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="px-4 py-4 text-sm font-bold text-[#1e293b]">{{ $item->location->name }}</td>
                                     @if($product->use_batches)
-                                        <td class="px-6 py-3 text-gray-500 dark:text-gray-400">
-                                            {{ $item->batch?->batch_code ?? '—' }}
-                                        </td>
-                                        <td class="px-6 py-3 text-gray-500 dark:text-gray-400">
+                                        <td class="px-4 py-4 text-sm font-medium text-gray-500">{{ $item->batch?->batch_code ?? '—' }}</td>
+                                        <td class="px-4 py-4 text-sm font-bold">
                                             @if($item->batch?->expiration_date)
-                                                <span class="{{ $item->batch->expiration_date->isPast() ? 'text-error-600 dark:text-error-400' : ($item->batch->expiration_date->diffInDays() < 30 ? 'text-warning-600 dark:text-warning-400' : '') }}">
+                                                <span class="{{ $item->batch->expiration_date->isPast() ? 'text-[#e11d48]' : ($item->batch->expiration_date->diffInDays() < 30 ? 'text-amber-500' : 'text-[#1e293b]') }}">
                                                     {{ $item->batch->expiration_date->format('d/m/Y') }}
                                                 </span>
                                             @else
-                                                —
+                                                <span class="text-gray-300">—</span>
                                             @endif
                                         </td>
                                     @endif
-                                    <td class="px-6 py-3 text-right font-medium text-gray-800 dark:text-white/90">
+                                    <td class="px-4 py-4 text-right text-sm font-black text-[#e11d48]">
                                         {{ number_format($item->quantity, 2) }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ $product->use_batches ? 4 : 2 }}" class="px-6 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-                                        Sin stock registrado.
+                                    <td colspan="{{ $product->use_batches ? 4 : 2 }}" class="px-6 py-10 text-center text-sm font-medium text-gray-400 italic">
+                                        Sin stock registrado en el sistema.
                                     </td>
                                 </tr>
                             @endforelse
@@ -115,18 +119,19 @@
 
         {{-- Sidebar: barcodes --}}
         <div>
-            <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-                <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-800">
-                    <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Códigos de Barras</h3>
+            <div class="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                <div class="border-b border-gray-50 px-8 py-5">
+                    <h3 class="text-xs font-black uppercase tracking-[2px] text-[#1e293b]">Códigos de Barras</h3>
                 </div>
-                <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                {{-- Fondo gris ultra claro para la lista interna como en los forms anteriores --}}
+                <div class="bg-gray-50/50 divide-y divide-white">
                     @forelse($product->barcodes as $barcode)
-                        <div class="flex items-center justify-between px-6 py-3">
-                            <span class="font-mono text-sm text-gray-800 dark:text-white/90">{{ $barcode->barcode }}</span>
-                            <span class="text-xs text-gray-400 dark:text-gray-500">× {{ $barcode->units_per_scan }}</span>
+                        <div class="flex items-center justify-between px-8 py-4">
+                            <span class="font-mono text-sm font-bold text-[#1e293b]">{{ $barcode->barcode }}</span>
+                            <span class="rounded-lg bg-white border border-gray-100 px-2 py-1 text-[10px] font-black text-[#e11d48]">× {{ $barcode->units_per_scan }}</span>
                         </div>
                     @empty
-                        <p class="px-6 py-6 text-center text-sm text-gray-400 dark:text-gray-500">Sin códigos registrados.</p>
+                        <p class="px-8 py-8 text-center text-xs font-medium text-gray-400">Sin códigos registrados.</p>
                     @endforelse
                 </div>
             </div>
