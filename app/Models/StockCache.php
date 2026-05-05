@@ -10,7 +10,6 @@ class StockCache extends Model
     protected $table = 'stock_cache';
 
     public $timestamps = false;
-    protected $table = 'stock_cache';
 
     protected $fillable = [
         'location_id',
