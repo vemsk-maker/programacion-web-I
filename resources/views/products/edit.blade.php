@@ -73,7 +73,14 @@
                         <input type="text" name="unit_of_measure" value="{{ old('unit_of_measure', $product->unit_of_measure) }}"
                             placeholder="Ej: unidad, kg"
                             class="h-11 w-full rounded-xl border px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('unit_of_measure') ? 'border-red-400' : 'border-gray-200' }}" />
-                        @error('unit_of_measure')<p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-bold text-[#1e293b]">Precio de Venta (Bs)</label>
+                        <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}"
+                            placeholder="0.00" min="0" step="0.01"
+                            class="h-11 w-full rounded-xl border px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all {{ $errors->has('sale_price') ? 'border-red-400' : 'border-gray-200' }}" />
+                        @error('sale_price')<p class="mt-1.5 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
                     </div>
                 </div>
 

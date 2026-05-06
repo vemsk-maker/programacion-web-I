@@ -56,6 +56,15 @@
                         <input type="text" name="unit_of_measure" placeholder="Ej: Unidad"
                             class="h-12 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm font-bold text-[#1e293b] focus:border-[#e11d48] outline-none" />
                     </div>
+
+                    {{-- Precio de venta --}}
+                    <div>
+                        <label class="mb-2 block text-[11px] font-black uppercase tracking-widest text-[#1e293b]/70">
+                            Precio de Venta (Bs)
+                        </label>
+                        <input type="number" name="sale_price" placeholder="0.00" min="0" step="0.01"
+                            class="h-12 w-full rounded-2xl border border-gray-200 bg-white px-5 text-sm font-bold text-[#1e293b] focus:border-[#e11d48] outline-none" />
+                    </div>
                 </div>
 
                 {{-- Toggles --}}

@@ -19,6 +19,7 @@ class StoreProductRequest extends FormRequest
             'description'     => ['nullable', 'string'],
             'category_id'     => ['required', 'integer', 'exists:categories,id'],
             'unit_of_measure' => ['required', 'string', 'max:50'],
+            'sale_price'      => ['nullable', 'numeric', 'min:0'],
             'use_batches'     => ['sometimes', 'boolean'],
             'active'          => ['sometimes', 'boolean'],
             'barcodes'              => ['nullable', 'array'],

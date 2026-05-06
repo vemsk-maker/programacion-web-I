@@ -199,7 +199,7 @@ class SaleController extends Controller
                     ->orWhereHas('barcodes', fn ($q2) => $q2->where('barcode', $q));
             })
             ->limit(10)
-            ->get(['id', 'name', 'unit_of_measure', 'use_batches']);
+            ->get(['id', 'name', 'unit_of_measure', 'use_batches', 'sale_price']);
 
         return response()->json(
             $products->map(fn ($p) => [
@@ -208,6 +208,7 @@ class SaleController extends Controller
                 'unit_of_measure' => $p->unit_of_measure,
                 'use_batches'     => (bool) $p->use_batches,
                 'stock'           => (float) $p->stockCache->sum('quantity'),
+                'sale_price'      => $p->sale_price !== null ? (float) $p->sale_price : null,
             ])
         );
     }

@@ -32,6 +32,16 @@
                             <p class="mt-1 text-sm font-bold text-[#1e293b]">{{ $product->unit_of_measure }}</p>
                         </div>
                         <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-[#1e293b]/50">Precio de Venta</span>
+                            <p class="mt-1 text-sm font-bold text-[#1e293b]">
+                                @if($product->sale_price !== null)
+                                    Bs {{ number_format($product->sale_price, 2) }}
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
+                            </p>
+                        </div>
+                        <div>
                             <span class="text-[10px] font-black uppercase tracking-widest text-[#1e293b]/50">Control por Lotes</span>
                             <p class="mt-1 text-sm font-bold">
                                 @if($product->use_batches)

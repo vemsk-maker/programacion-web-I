@@ -14,12 +14,14 @@ class Product extends Model
         'category_id',
         'use_batches',
         'unit_of_measure',
+        'sale_price',
         'active',
     ];
 
     protected $casts = [
         'use_batches' => 'boolean',
         'active'      => 'boolean',
+        'sale_price'  => 'decimal:2',
     ];
 
     public function category(): BelongsTo

@@ -77,7 +77,7 @@
                         use_batches: product.use_batches,
                         stock:       product.stock,
                         qty:         1,
-                        price:       0,
+                        price:       product.sale_price !== null && product.sale_price !== undefined ? product.sale_price : 0,
                     });
                 }
                 this.searchQuery   = '';
