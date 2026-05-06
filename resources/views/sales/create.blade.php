@@ -5,12 +5,16 @@
 
     <div
         x-data="{
-            locationId:    '{{ $locations->count() === 1 ? $locations->first()->id : '' }}',
-            searchQuery:   '',
-            searchResults: [],
-            searchLoading: false,
-            searchTimer:   null,
-            showResults:   false,
+            locationId:     '{{ $locations->count() === 1 ? $locations->first()->id : '' }}',
+            searchQuery:    '',
+            searchResults:  [],
+            searchLoading:  false,
+            searchTimer:    null,
+            showResults:    false,
+            categoryFilter: '',
+            priceMin:       '',
+            priceMax:       '',
+            categories:     @json($categories),
 
             cart:        [],
             clientName:  '',
@@ -41,8 +45,17 @@
                 clearTimeout(this.searchTimer);
                 this.errors = {};
                 const q = this.searchQuery.trim();
-                if (q.length < 2) { this.searchResults = []; this.showResults = false; return; }
+                const hasFilters = this.categoryFilter || this.priceMin || this.priceMax;
+                if (q.length < 2 && !hasFilters) { this.searchResults = []; this.showResults = false; return; }
                 this.searchTimer = setTimeout(() => this.doSearch(q), 300);
+            },
+
+            onFilterChange() {
+                clearTimeout(this.searchTimer);
+                const q = this.searchQuery.trim();
+                const hasFilters = this.categoryFilter || this.priceMin || this.priceMax;
+                if (!hasFilters && q.length < 2) { this.searchResults = []; this.showResults = false; return; }
+                this.searchTimer = setTimeout(() => this.doSearch(q), 250);
             },
 
             async doSearch(q) {
@@ -50,6 +63,9 @@
                 this.searchLoading = true;
                 this.showResults   = true;
                 const params = new URLSearchParams({ q, location_id: this.locationId });
+                if (this.categoryFilter) params.set('category_id', this.categoryFilter);
+                if (this.priceMin)       params.set('price_min', this.priceMin);
+                if (this.priceMax)       params.set('price_max', this.priceMax);
                 try {
                     const r = await fetch(`${this.searchEndpoint}?${params}`, {
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -211,10 +227,45 @@
                 @endif
 
                 {{-- Buscador --}}
-                <div class="rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm">
+                <div class="rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm space-y-4">
+
+                    {{-- Filtros: Categoría + Precio --}}
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div class="sm:col-span-1">
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">Categoría</label>
+                            <div class="relative">
+                                <select x-model="categoryFilter" @change="onFilterChange()"
+                                    :disabled="!locationId"
+                                    class="h-9 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40">
+                                    <option value="">Todas las categorías</option>
+                                    <template x-for="cat in categories" :key="cat.id">
+                                        <option :value="cat.id" x-text="cat.name"></option>
+                                    </template>
+                                </select>
+                                <span class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400">
+                                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">Precio mín. (Bs)</label>
+                            <input type="number" x-model="priceMin" @input="onFilterChange()" min="0" step="0.01"
+                                placeholder="0.00" :disabled="!locationId"
+                                class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40" />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">Precio máx. (Bs)</label>
+                            <input type="number" x-model="priceMax" @input="onFilterChange()" min="0" step="0.01"
+                                placeholder="0.00" :disabled="!locationId"
+                                class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40" />
+                        </div>
+                    </div>
+
+                    {{-- Búsqueda por texto / código de barras --}}
+                    <div>
                     <label class="mb-2 block text-sm font-bold text-[#1e293b]">
                         Buscar producto
-                        <span class="ml-1 text-xs font-medium text-gray-400">(nombre o código de barras)</span>
+                        <span class="ml-1 text-xs font-medium text-gray-400">(nombre, precio o código de barras)</span>
                     </label>
                     <div class="relative" @click.outside="showResults = false">
                         <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center">
@@ -252,6 +303,9 @@
                                             <template x-if="p.use_batches">
                                                 <span class="ml-1 rounded-lg bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-600">PEPS</span>
                                             </template>
+                                            <template x-if="p.sale_price !== null">
+                                                <span class="ml-2 font-bold text-[#1e293b]" x-text="'Bs ' + p.sale_price.toFixed(2)"></span>
+                                            </template>
                                         </p>
                                     </div>
                                     <span class="shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase"
@@ -273,6 +327,7 @@
                     <p class="mt-2 text-xs text-gray-400">
                         Presione <kbd class="rounded border border-gray-200 px-1 font-mono text-xs">Enter</kbd> para agregar el primer resultado. Compatible con lectores USB.
                     </p>
+                    </div>{{-- /text search wrapper --}}
                 </div>
 
                 {{-- Carrito --}}

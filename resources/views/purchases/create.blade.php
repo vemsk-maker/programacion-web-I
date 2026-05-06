@@ -27,13 +27,16 @@
             'name'        => $p->name,
             'use_batches' => (bool) $p->use_batches,
             'barcodes'    => $p->barcodes->pluck('barcode')->toArray(),
+            'category_id' => $p->category_id,
+            'sale_price'  => $p->sale_price !== null ? (float) $p->sale_price : null,
         ])->values()->toArray();
     @endphp
 
     <script>
         window.__purchaseData = {
-            products: @json($productsJson),
-            lines: @json($initialLines),
+            products:   @json($productsJson),
+            categories: @json($categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()),
+            lines:      @json($initialLines),
         };
     </script>
 
@@ -63,8 +66,12 @@
 
     <form method="POST" action="{{ route('inventory.purchases.store') }}"
           x-data="{
-              products: window.__purchaseData.products,
-              lines: window.__purchaseData.lines,
+              products:       window.__purchaseData.products,
+              categories:     window.__purchaseData.categories,
+              lines:          window.__purchaseData.lines,
+              categoryFilter: '',
+              priceMin:       '',
+              priceMax:       '',
               init() {
                   if (this.lines.length === 0) this.addLine();
               },
@@ -79,18 +86,26 @@
               addLine()    { this.lines.push(this.newLine()); },
               removeLine(i){ if (this.lines.length > 1) this.lines.splice(i, 1); },
               searchProduct(i) {
-                  const q = this.lines[i].search.toLowerCase().trim();
-                  if (q.length < 1) {
+                  const q   = this.lines[i].search.toLowerCase().trim();
+                  const cat = this.categoryFilter;
+                  const min = this.priceMin !== '' ? parseFloat(this.priceMin) : null;
+                  const max = this.priceMax !== '' ? parseFloat(this.priceMax) : null;
+                  if (q.length < 1 && !cat && min === null && max === null) {
                       this.lines[i].results    = [];
                       this.lines[i].showResults = false;
                       return;
                   }
                   this.lines[i].results = this.products
-                      .filter(p =>
-                          p.name.toLowerCase().includes(q) ||
-                          p.barcodes.some(b => b.includes(q))
-                      )
-                      .slice(0, 8);
+                      .filter(p => {
+                          const matchText = q.length < 1 ||
+                              p.name.toLowerCase().includes(q) ||
+                              p.barcodes.some(b => b.toLowerCase().includes(q));
+                          const matchCat  = !cat || p.category_id == cat;
+                          const matchMin  = min === null || (p.sale_price !== null && p.sale_price >= min);
+                          const matchMax  = max === null || (p.sale_price !== null && p.sale_price <= max);
+                          return matchText && matchCat && matchMin && matchMax;
+                      })
+                      .slice(0, 10);
                   this.lines[i].showResults = this.lines[i].results.length > 0;
               },
               selectProduct(i, p) {
@@ -197,6 +212,38 @@
             </div>
         </div>
 
+        {{-- ── Filtros de producto ── --}}
+        <div class="rounded-[2.5rem] border border-gray-100 bg-white px-8 py-5 shadow-sm">
+            <p class="mb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Filtros de búsqueda</p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div class="sm:col-span-1">
+                    <label class="mb-1 block text-xs font-bold text-[#1e293b]">Categoría</label>
+                    <div class="relative">
+                        <select x-model="categoryFilter"
+                            class="h-9 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all">
+                            <option value="">Todas las categorías</option>
+                            <template x-for="cat in categories" :key="cat.id">
+                                <option :value="cat.id" x-text="cat.name"></option>
+                            </template>
+                        </select>
+                        <span class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400">
+                            <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-bold text-[#1e293b]">Precio venta mín. (Bs)</label>
+                    <input type="number" x-model="priceMin" min="0" step="0.01" placeholder="0.00"
+                        class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-bold text-[#1e293b]">Precio venta máx. (Bs)</label>
+                    <input type="number" x-model="priceMax" min="0" step="0.01" placeholder="0.00"
+                        class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
+                </div>
+            </div>
+        </div>
+
         {{-- ── Líneas de productos ── --}}
         <div class="rounded-[2.5rem] border border-gray-100 bg-white shadow-sm">
 
@@ -250,7 +297,12 @@
                                             <button type="button"
                                                 @click="selectProduct(i, result)"
                                                 class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                                                <span class="flex-1 font-semibold" x-text="result.name"></span>
+                                                <div class="flex-1 min-w-0">
+                                                    <span class="block truncate font-semibold" x-text="result.name"></span>
+                                                    <template x-if="result.sale_price !== null">
+                                                        <span class="text-xs text-gray-400" x-text="'Bs ' + result.sale_price.toFixed(2)"></span>
+                                                    </template>
+                                                </div>
                                                 <span x-show="result.use_batches"
                                                     class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-gray-500">
                                                     PEPS

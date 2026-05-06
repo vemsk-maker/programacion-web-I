@@ -8,6 +8,7 @@ use App\Enums\LocationType;
 use App\Enums\MovementType;
 use App\Http\Requests\StoreSaleRequest;
 use App\Models\Document;
+use App\Models\Category;
 use App\Models\Location;
 use App\Models\MovementGroup;
 use App\Models\Product;
@@ -65,7 +66,9 @@ class SaleController extends Controller
                 ->get(['id', 'name']);
         }
 
-        return view('sales.create', compact('locations'));
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+
+        return view('sales.create', compact('locations', 'categories'));
     }
 
     // ── Register sale (JSON) ──────────────────────────────────────────────────
@@ -184,8 +187,15 @@ class SaleController extends Controller
     {
         $q          = trim((string) $request->input('q', ''));
         $locationId = (int) $request->input('location_id', 0);
+        $categoryId = (int) $request->input('category_id', 0);
+        $priceMin   = $request->input('price_min');
+        $priceMax   = $request->input('price_max');
 
-        if (strlen($q) < 2 || $locationId < 1) {
+        $hasText     = strlen($q) >= 2;
+        $hasCategory = $categoryId > 0;
+        $hasPrice    = ($priceMin !== null && $priceMin !== '') || ($priceMax !== null && $priceMax !== '');
+
+        if ($locationId < 1 || (!$hasText && !$hasCategory && !$hasPrice)) {
             return response()->json([]);
         }
 
@@ -194,11 +204,14 @@ class SaleController extends Controller
             'stockCache' => fn ($query) => $query->where('location_id', $locationId),
         ])
             ->where('active', true)
-            ->where(function ($query) use ($q) {
-                $query->where('name', 'ilike', "%{$q}%")
+            ->when($hasText, fn ($query) => $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'ilike', "%{$q}%")
                     ->orWhereHas('barcodes', fn ($q2) => $q2->where('barcode', $q));
-            })
-            ->limit(10)
+            }))
+            ->when($hasCategory, fn ($query) => $query->where('category_id', $categoryId))
+            ->when($priceMin !== null && $priceMin !== '', fn ($query) => $query->where('sale_price', '>=', (float) $priceMin))
+            ->when($priceMax !== null && $priceMax !== '', fn ($query) => $query->where('sale_price', '<=', (float) $priceMax))
+            ->limit(20)
             ->get(['id', 'name', 'unit_of_measure', 'use_batches', 'sale_price']);
 
         return response()->json(

@@ -8,6 +8,7 @@ use App\Enums\LocationType;
 use App\Enums\MovementType;
 use App\Http\Requests\StorePurchaseRequest;
 use App\Models\Document;
+use App\Models\Category;
 use App\Models\Location;
 use App\Models\MovementGroup;
 use App\Models\Product;
@@ -50,12 +51,14 @@ class PurchaseController extends Controller
             LocationType::Store->value,
         ])->orderBy('name')->get(['id', 'name', 'type']);
 
-        $products = Product::with('barcodes:product_id,barcode')
+        $products = Product::with(['barcodes:product_id,barcode', 'category:id,name'])
             ->where('active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'use_batches']);
+            ->get(['id', 'name', 'use_batches', 'category_id', 'sale_price']);
 
-        return view('purchases.create', compact('suppliers', 'locations', 'products'));
+        $categories = Category::orderBy('name')->get(['id', 'name']);
+
+        return view('purchases.create', compact('suppliers', 'locations', 'products', 'categories'));
     }
 
     public function store(StorePurchaseRequest $request)
