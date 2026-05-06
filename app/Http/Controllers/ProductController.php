@@ -52,10 +52,9 @@ class ProductController extends Controller
     {
         $product->load(['category', 'barcodes']);
 
-        $stock = StockCache::with('location')
+        $stock = StockCache::with(['location', 'batch'])
             ->where('product_id', $product->id)
-            ->get()
-            ->groupBy('location.name');
+            ->get();
 
         return view('products.show', compact('product', 'stock'));
     }
