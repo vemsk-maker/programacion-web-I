@@ -63,7 +63,7 @@
         :class="(!$store.sidebar.isExpanded && !$store.sidebar.isHovered && !$store.sidebar.isMobileOpen) ?
         'xl:justify-center' :
         'justify-start'">
-       <a href="/" class="flex justify-center w-full py-6">
+       <a href="{{ route('dashboard') }}" class="flex justify-center w-full py-6">
     <!-- Logo principal (cuando el sidebar está expandido) -->
     <img 
         x-show="$store.sidebar.isExpanded || $store.sidebar.isHovered || $store.sidebar.isMobileOpen"

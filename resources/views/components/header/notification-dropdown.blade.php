@@ -106,7 +106,7 @@
             @foreach($expiredBatches as $batch)
                 @php $daysAgo = abs($batch->expiration_date->diffInDays($today)); @endphp
                 <li>
-                    <a href="{{ url('/reports/expiry') }}"
+                    <a href="{{ route('reports.expirations') }}"
                         class="flex gap-3 rounded-lg border-b border-gray-100 p-3 hover:bg-red-50 dark:border-gray-800 dark:hover:bg-white/5">
                         <!-- Ícono rojo: vencido -->
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-[#e11d48]">
@@ -156,7 +156,7 @@
                     }
                 @endphp
                 <li>
-                    <a href="{{ url('/reports/expiry') }}"
+                    <a href="{{ route('reports.expirations') }}"
                         class="flex gap-3 rounded-lg border-b border-gray-100 p-3 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/5">
                         <!-- Ícono según urgencia -->
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $bg }} {{ $color }}">
@@ -187,7 +187,7 @@
 
         <!-- Ver reporte -->
         <a
-            href="{{ url('/reports/expiry') }}"
+            href="{{ route('reports.expirations') }}"
             class="mt-3 flex justify-center rounded-lg border border-gray-300 bg-white p-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
         >
             Ver reporte de vencimientos →

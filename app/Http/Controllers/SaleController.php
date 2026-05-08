@@ -68,7 +68,12 @@ class SaleController extends Controller
 
         $categories = Category::orderBy('name')->get(['id', 'name']);
 
-        return view('sales.create', compact('locations', 'categories'));
+        $products = Product::with('barcodes:product_id,barcode')
+            ->where('active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'unit_of_measure', 'use_batches', 'sale_price', 'category_id']);
+
+        return view('sales.create', compact('locations', 'categories', 'products'));
     }
 
     // ── Register sale (JSON) ──────────────────────────────────────────────────

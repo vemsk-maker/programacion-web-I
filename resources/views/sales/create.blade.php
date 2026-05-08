@@ -3,170 +3,31 @@
 @section('content')
     <x-common.page-breadcrumb pageTitle="Punto de Venta" />
 
-    <div
-        x-data="{
-            locationId:     '{{ $locations->count() === 1 ? $locations->first()->id : '' }}',
-            searchQuery:    '',
-            searchResults:  [],
-            searchLoading:  false,
-            searchTimer:    null,
-            showResults:    false,
-            categoryFilter: '',
-            priceMin:       '',
-            priceMax:       '',
-            categories:     @json($categories),
+    {{-- Datos para Alpine.js --}}
+    @php
+        $productsJson = $products->map(fn ($p) => [
+            'id'              => $p->id,
+            'name'            => $p->name,
+            'unit_of_measure' => $p->unit_of_measure,
+            'use_batches'     => (bool) $p->use_batches,
+            'sale_price'      => $p->sale_price !== null ? (float) $p->sale_price : null,
+            'category_id'     => $p->category_id,
+            'barcodes'        => $p->barcodes->pluck('barcode')->toArray(),
+        ])->values()->toArray();
+    @endphp
 
-            cart:        [],
-            clientName:  '',
-            clientNit:   '',
+    <script>
+        window.__posData = {
+            products:   @json($productsJson),
+            categories: @json($categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()),
+            locationId: '{{ $locations->count() === 1 ? $locations->first()->id : '' }}',
+            storeUrl:   '{{ route('sales.store') }}',
+            indexUrl:   '{{ route('sales.index') }}',
+        };
+    </script>
 
-            submitting: false,
-            lastDoc:    null,
-            lastDocUrl: null,
-            errors:     {},
+    <div x-data="posApp()" x-init="init()" class="space-y-5">
 
-            searchEndpoint: '{{ route('sales.search') }}',
-            storeEndpoint:  '{{ route('sales.store') }}',
-            csrfToken:      '',
-
-            get cartTotal() {
-                return this.cart.reduce((s, l) => s + (parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0), 0);
-            },
-            get canSubmit() {
-                return this.cart.length > 0 && !!this.locationId && !this.submitting;
-            },
-
-            init() {
-                this.csrfToken = document.querySelector('meta[name=csrf-token]')?.content ?? '';
-                this.$nextTick(() => this.$refs.searchInput?.focus());
-            },
-
-            onSearchInput() {
-                clearTimeout(this.searchTimer);
-                this.errors = {};
-                const q = this.searchQuery.trim();
-                const hasFilters = this.categoryFilter || this.priceMin || this.priceMax;
-                if (q.length < 2 && !hasFilters) { this.searchResults = []; this.showResults = false; return; }
-                this.searchTimer = setTimeout(() => this.doSearch(q), 300);
-            },
-
-            onFilterChange() {
-                clearTimeout(this.searchTimer);
-                const q = this.searchQuery.trim();
-                const hasFilters = this.categoryFilter || this.priceMin || this.priceMax;
-                if (!hasFilters && q.length < 2) { this.searchResults = []; this.showResults = false; return; }
-                this.searchTimer = setTimeout(() => this.doSearch(q), 250);
-            },
-
-            async doSearch(q) {
-                if (!this.locationId) return;
-                this.searchLoading = true;
-                this.showResults   = true;
-                const params = new URLSearchParams({ q, location_id: this.locationId });
-                if (this.categoryFilter) params.set('category_id', this.categoryFilter);
-                if (this.priceMin)       params.set('price_min', this.priceMin);
-                if (this.priceMax)       params.set('price_max', this.priceMax);
-                try {
-                    const r = await fetch(`${this.searchEndpoint}?${params}`, {
-                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                    });
-                    this.searchResults = await r.json();
-                } catch(e) {
-                    this.searchResults = [];
-                }
-                this.searchLoading = false;
-            },
-
-            onSearchEnter() {
-                if (this.searchResults.length > 0) this.addToCart(this.searchResults[0]);
-            },
-
-            addToCart(product) {
-                const idx = this.cart.findIndex(l => l.product_id === product.id);
-                if (idx !== -1) {
-                    this.cart[idx].qty = parseFloat(this.cart[idx].qty) + 1;
-                } else {
-                    this.cart.push({
-                        product_id:  product.id,
-                        name:        product.name,
-                        unit:        product.unit_of_measure || '',
-                        use_batches: product.use_batches,
-                        stock:       product.stock,
-                        qty:         1,
-                        price:       product.sale_price !== null && product.sale_price !== undefined ? product.sale_price : 0,
-                    });
-                }
-                this.searchQuery   = '';
-                this.searchResults = [];
-                this.showResults   = false;
-                this.errors        = {};
-                this.$nextTick(() => this.$refs.searchInput?.focus());
-            },
-
-            removeFromCart(i) { this.cart.splice(i, 1); },
-
-            clearCart() {
-                this.cart       = [];
-                this.clientName = '';
-                this.clientNit  = '';
-                this.errors     = {};
-                this.$nextTick(() => this.$refs.searchInput?.focus());
-            },
-
-            async confirmSale() {
-                if (!this.canSubmit) return;
-                this.submitting = true;
-                this.errors     = {};
-                try {
-                    const r = await fetch(this.storeEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept':       'application/json',
-                            'X-CSRF-TOKEN': this.csrfToken,
-                        },
-                        body: JSON.stringify({
-                            location_id: parseInt(this.locationId),
-                            client_name: this.clientName || null,
-                            client_nit:  this.clientNit  || null,
-                            lines: this.cart.map(l => ({
-                                product_id: l.product_id,
-                                quantity:   parseFloat(l.qty)   || 0,
-                                unit_price: parseFloat(l.price) || 0,
-                            })),
-                        }),
-                    });
-                    const data = await r.json();
-                    if (r.ok && data.success) {
-                        this.lastDoc    = data.doc_number;
-                        this.lastDocUrl = data.show_url;
-                        this.cart       = [];
-                        this.clientName = '';
-                        this.clientNit  = '';
-                        this.$nextTick(() => this.$refs.searchInput?.focus());
-                    } else if (r.status === 422 && data.errors) {
-                        const msgs = Object.values(data.errors).flat();
-                        this.errors = { general: msgs.join(' | ') };
-                    } else {
-                        this.errors = { general: data.message ?? 'Error al procesar la venta.' };
-                    }
-                } catch(e) {
-                    this.errors = { general: 'Error de conexión. Intente nuevamente.' };
-                }
-                this.submitting = false;
-            },
-
-            dismissSuccess() {
-                this.lastDoc    = null;
-                this.lastDocUrl = null;
-            },
-
-            fmtCurrency(v) {
-                return 'Bs. ' + (parseFloat(v) || 0).toFixed(2);
-            },
-        }"
-        class="space-y-5"
-    >
         {{-- Banner éxito --}}
         <div x-show="lastDoc" x-cloak
             class="flex items-center justify-between rounded-2xl bg-emerald-50 border border-emerald-100 px-6 py-4">
@@ -181,24 +42,24 @@
                     class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all">
                     Ver / Imprimir
                 </a>
-                <button @click="dismissSuccess()" class="text-emerald-400 hover:text-emerald-600 text-xl leading-none">✕</button>
+                <button @click="lastDoc = null; lastDocUrl = null" class="text-emerald-400 hover:text-emerald-600 text-xl leading-none">✕</button>
             </div>
         </div>
 
         {{-- Banner error --}}
-        <div x-show="errors.general" x-cloak
+        <div x-show="errorMsg" x-cloak
             class="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 px-6 py-4 text-sm font-bold text-[#e11d48]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            <span x-text="errors.general"></span>
+            <span x-text="errorMsg"></span>
         </div>
 
         {{-- Layout POS: 3/5 izquierda + 2/5 derecha --}}
         <div class="grid gap-5 lg:grid-cols-5">
 
-            {{-- ══ Columna izquierda — Búsqueda + Carrito ══ --}}
+            {{-- ══ Columna izquierda ══ --}}
             <div class="space-y-5 lg:col-span-3">
 
-                {{-- Selector de sucursal (más de una) --}}
+                {{-- Selector de sucursal --}}
                 @if($locations->count() > 1)
                     <div class="rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm">
                         <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
@@ -206,7 +67,6 @@
                         </label>
                         <div class="relative">
                             <select x-model="locationId"
-                                @change="searchResults = []; searchQuery = ''; $nextTick(() => $refs.searchInput?.focus())"
                                 class="h-11 w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 pr-10 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all">
                                 <option value="">— Seleccionar sucursal —</option>
                                 @foreach($locations as $loc)
@@ -226,108 +86,69 @@
                     </div>
                 @endif
 
-                {{-- Buscador --}}
+                {{-- Panel de búsqueda / selección --}}
                 <div class="rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm space-y-4">
 
-                    {{-- Filtros: Categoría + Precio --}}
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div class="sm:col-span-1">
-                            <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">Categoría</label>
-                            <div class="relative">
-                                <select x-model="categoryFilter" @change="onFilterChange()"
-                                    :disabled="!locationId"
-                                    class="h-9 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40">
-                                    <option value="">Todas las categorías</option>
-                                    <template x-for="cat in categories" :key="cat.id">
-                                        <option :value="cat.id" x-text="cat.name"></option>
-                                    </template>
-                                </select>
-                                <span class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400">
-                                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                </span>
-                            </div>
+                    {{-- Filtro por categoría --}}
+                    <div class="flex items-center gap-3">
+                        <label class="shrink-0 text-[10px] font-black uppercase tracking-widest text-gray-400">Filtrar por categoría</label>
+                        <div class="relative flex-1">
+                            <select x-model="categoryFilter" @change="applyFilters()"
+                                :disabled="!locationId"
+                                class="h-9 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40">
+                                <option value="">Todas las categorías</option>
+                                <template x-for="cat in categories" :key="cat.id">
+                                    <option :value="cat.id" x-text="cat.name"></option>
+                                </template>
+                            </select>
+                            <span class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400">
+                                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
                         </div>
-                        <div>
-                            <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">Precio mín. (Bs)</label>
-                            <input type="number" x-model="priceMin" @input="onFilterChange()" min="0" step="0.01"
-                                placeholder="0.00" :disabled="!locationId"
-                                class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40" />
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">Precio máx. (Bs)</label>
-                            <input type="number" x-model="priceMax" @input="onFilterChange()" min="0" step="0.01"
-                                placeholder="0.00" :disabled="!locationId"
-                                class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40" />
-                        </div>
+                        <button type="button" x-show="categoryFilter" @click="categoryFilter = ''; applyFilters()"
+                            class="shrink-0 text-xs font-bold text-gray-400 hover:text-[#e11d48] transition-colors">
+                            Limpiar
+                        </button>
                     </div>
 
-                    {{-- Búsqueda por texto / código de barras --}}
+                    {{-- Selector de producto (Tom Select) --}}
                     <div>
-                    <label class="mb-2 block text-sm font-bold text-[#1e293b]">
-                        Buscar producto
-                        <span class="ml-1 text-xs font-medium text-gray-400">(nombre, precio o código de barras)</span>
-                    </label>
-                    <div class="relative" @click.outside="showResults = false">
-                        <div class="pointer-events-none absolute inset-y-0 left-4 flex items-center">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/></svg>
-                        </div>
-                        <input
-                            type="text"
-                            x-ref="searchInput"
-                            x-model="searchQuery"
-                            @input="onSearchInput()"
-                            @focus="if(searchQuery.length >= 2) showResults = true"
-                            @keydown.enter.prevent="onSearchEnter()"
-                            @keydown.escape="showResults = false; searchQuery = ''; searchResults = []"
-                            placeholder="Escriba nombre o escanee código de barras..."
-                            autocomplete="off"
-                            :disabled="!locationId"
-                            class="h-12 w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-11 pr-4 text-base text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                        />
-
-                        {{-- Spinner --}}
-                        <div x-show="searchLoading" class="pointer-events-none absolute inset-y-0 right-4 flex items-center">
-                            <div class="h-4 w-4 animate-spin rounded-full border-2 border-[#e11d48] border-t-transparent"></div>
-                        </div>
-
-                        {{-- Resultados dropdown --}}
-                        <div x-show="showResults && searchResults.length > 0" x-cloak
-                            class="absolute top-full left-0 right-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-xl">
-                            <template x-for="p in searchResults" :key="p.id">
-                                <button type="button" @click="addToCart(p)"
-                                    class="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors">
-                                    <div class="flex-1 min-w-0">
-                                        <p class="truncate text-sm font-bold text-[#1e293b]" x-text="p.name"></p>
-                                        <p class="text-xs text-gray-400">
-                                            <span x-text="p.unit_of_measure || 'UN'"></span>
-                                            <template x-if="p.use_batches">
-                                                <span class="ml-1 rounded-lg bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-600">PEPS</span>
-                                            </template>
-                                            <template x-if="p.sale_price !== null">
-                                                <span class="ml-2 font-bold text-[#1e293b]" x-text="'Bs ' + p.sale_price.toFixed(2)"></span>
-                                            </template>
-                                        </p>
-                                    </div>
-                                    <span class="shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase"
-                                        :class="p.stock > 0
-                                            ? 'bg-emerald-50 text-emerald-600'
-                                            : 'bg-red-50 text-[#e11d48]'">
-                                        <span x-text="p.stock"></span> disp.
-                                    </span>
-                                </button>
-                            </template>
-                        </div>
-
-                        {{-- Sin resultados --}}
-                        <div x-show="showResults && !searchLoading && searchResults.length === 0 && searchQuery.length >= 2" x-cloak
-                            class="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm font-medium text-gray-400 shadow-xl">
-                            Sin resultados para "<span x-text="searchQuery"></span>"
-                        </div>
+                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                            Seleccionar producto
+                        </label>
+                        <select id="ts-product"></select>
                     </div>
-                    <p class="mt-2 text-xs text-gray-400">
-                        Presione <kbd class="rounded border border-gray-200 px-1 font-mono text-xs">Enter</kbd> para agregar el primer resultado. Compatible con lectores USB.
-                    </p>
-                    </div>{{-- /text search wrapper --}}
+
+                    {{-- Código de barras --}}
+                    <div>
+                        <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                            Código de barras
+                            <span class="ml-1 text-xs font-medium text-gray-400">(escaneo o manual)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text"
+                                x-ref="barcodeInput"
+                                x-model="barcodeQuery"
+                                @keydown.enter.prevent="onBarcodeEnter()"
+                                @input="onBarcodeInput()"
+                                placeholder="Escanee o escriba el código..."
+                                autocomplete="off"
+                                :disabled="!locationId"
+                                class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-4 font-mono text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all disabled:opacity-40" />
+                            <button type="button" @click="addSelectedToCart()"
+                                :disabled="!selectedProduct || !locationId"
+                                class="h-11 rounded-xl bg-[#1e293b] px-5 text-sm font-bold text-white hover:bg-[#334155] transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                                + Agregar
+                            </button>
+                        </div>
+                        <p x-show="barcodeNotFound" class="mt-1.5 text-xs font-bold text-[#e11d48]">
+                            Código no encontrado en el catálogo.
+                        </p>
+                        <p class="mt-1.5 text-xs text-gray-400">
+                            Presione <kbd class="rounded border border-gray-200 px-1 font-mono text-xs">Enter</kbd> en el código de barras para agregar directamente. Compatible con lectores USB.
+                        </p>
+                    </div>
+
                 </div>
 
                 {{-- Carrito --}}
@@ -353,7 +174,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                         </svg>
                         <p class="text-sm font-bold text-gray-400">El carrito está vacío</p>
-                        <p class="mt-1 text-xs text-gray-300">Busque un producto para comenzar</p>
+                        <p class="mt-1 text-xs text-gray-300">Seleccione un producto para comenzar</p>
                     </div>
 
                     {{-- Líneas del carrito --}}
@@ -362,7 +183,7 @@
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr class="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                        <th class="pb-3 pl-8 pt-4">Producto</th>
+                                        <th class="pb-3 pl-8 pt-4 text-left">Producto</th>
                                         <th class="pb-3 pt-4 text-center">UM</th>
                                         <th class="pb-3 pt-4 text-center w-24">Cant.</th>
                                         <th class="pb-3 pt-4 text-center w-28">Precio</th>
@@ -396,10 +217,10 @@
                                                 </div>
                                             </td>
                                             <td class="py-4 pr-2 text-right font-black text-[#1e293b]">
-                                                <span x-text="fmtCurrency((parseFloat(line.qty)||0) * (parseFloat(line.price)||0))"></span>
+                                                <span x-text="fmt((parseFloat(line.qty)||0) * (parseFloat(line.price)||0))"></span>
                                             </td>
                                             <td class="py-4 pr-4">
-                                                <button type="button" @click="removeFromCart(i)"
+                                                <button type="button" @click="cart.splice(i, 1)"
                                                     class="flex h-7 w-7 items-center justify-center rounded-full text-gray-300 hover:bg-red-50 hover:text-[#e11d48] transition-all">✕</button>
                                             </td>
                                         </tr>
@@ -411,7 +232,7 @@
                 </div>
             </div>
 
-            {{-- ══ Columna derecha — Resumen + Confirmar ══ --}}
+            {{-- ══ Columna derecha ══ --}}
             <div class="lg:col-span-2">
                 <div class="sticky top-5 space-y-5">
 
@@ -439,22 +260,20 @@
                         <div class="mb-5 flex items-baseline justify-between">
                             <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total</span>
                             <span class="font-mono text-3xl font-black text-[#1e293b]"
-                                x-text="fmtCurrency(cartTotal)"></span>
+                                x-text="fmt(cart.reduce((s,l) => s + (parseFloat(l.qty)||0)*(parseFloat(l.price)||0), 0))"></span>
                         </div>
 
-                        {{-- Resumen líneas --}}
                         <div x-show="cart.length > 0" class="mb-5 space-y-1.5 border-t border-gray-50 pt-4">
                             <template x-for="line in cart" :key="line.product_id">
                                 <div class="flex justify-between text-xs">
                                     <span class="font-medium text-gray-500" x-text="`${line.name} × ${parseFloat(line.qty)||0}`"></span>
-                                    <span class="font-bold text-gray-700" x-text="fmtCurrency((parseFloat(line.qty)||0)*(parseFloat(line.price)||0))"></span>
+                                    <span class="font-bold text-gray-700" x-text="fmt((parseFloat(line.qty)||0)*(parseFloat(line.price)||0))"></span>
                                 </div>
                             </template>
                         </div>
 
-                        <button type="button"
-                            @click="confirmSale()"
-                            :disabled="!canSubmit"
+                        <button type="button" @click="confirmSale()"
+                            :disabled="cart.length === 0 || !locationId || submitting"
                             class="relative w-full rounded-xl bg-[#e11d48] px-5 py-4 text-base font-black text-white shadow-md transition-all hover:bg-[#be123c] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100">
                             <span x-show="!submitting">Confirmar Venta</span>
                             <span x-show="submitting" class="flex items-center justify-center gap-2">
@@ -471,7 +290,6 @@
                         </div>
                     </div>
 
-                    {{-- Link historial --}}
                     <a href="{{ route('sales.index') }}"
                         class="flex h-11 w-full items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-[#1e293b] transition-all">
                         Ver Historial de Ventas
@@ -481,3 +299,246 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+{{-- Tom Select --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+    .ts-wrapper.single .ts-control {
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 0 1rem;
+        height: 2.75rem;
+        font-size: 0.875rem;
+        color: #374151;
+        box-shadow: none;
+        cursor: pointer;
+    }
+    .ts-wrapper.single .ts-control:focus-within { border-color: #9ca3af; }
+    .ts-dropdown { border-radius: 0.75rem; border: 1px solid #f3f4f6; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
+    .ts-dropdown .option { padding: 0.6rem 1rem; font-size: 0.875rem; }
+    .ts-dropdown .option.active { background: #f9fafb; color: #1e293b; }
+    .ts-dropdown .option:hover { background: #f3f4f6; }
+    .ts-wrapper.disabled .ts-control { opacity: 0.4; cursor: not-allowed; }
+</style>
+
+<script>
+function posApp() {
+    return {
+        // ─── State ───────────────────────────────────────────────────────
+        allProducts:    window.__posData.products,
+        categories:     window.__posData.categories,
+        locationId:     window.__posData.locationId,
+        storeUrl:       window.__posData.storeUrl,
+
+        categoryFilter: '',
+
+        selectedProduct:  null,
+        barcodeQuery:     '',
+        barcodeNotFound:  false,
+
+        cart:       [],
+        clientName: '',
+        clientNit:  '',
+
+        submitting: false,
+        lastDoc:    null,
+        lastDocUrl: null,
+        errorMsg:   null,
+
+        tsInstance: null,
+        csrfToken:  '',
+
+        // ─── Init ─────────────────────────────────────────────────────────
+        init() {
+            this.csrfToken = document.querySelector('meta[name=csrf-token]')?.content ?? '';
+            this.$nextTick(() => {
+                this.initTomSelect();
+                this.$refs.barcodeInput?.focus();
+            });
+            // Habilitar / deshabilitar Tom Select cuando cambia la sucursal
+            this.$watch('locationId', val => {
+                if (!this.tsInstance) return;
+                if (val) {
+                    this.tsInstance.enable();
+                } else {
+                    this.tsInstance.disable();
+                    this.tsInstance.clear(true);
+                    this.selectedProduct = null;
+                    this.barcodeQuery    = '';
+                }
+            });
+        },
+
+        initTomSelect() {
+            const self = this;
+            if (this.tsInstance) { this.tsInstance.destroy(); }
+
+            this.tsInstance = new TomSelect('#ts-product', {
+                valueField:   'id',
+                labelField:   'name',
+                searchField:  ['name'],
+                placeholder:  'Escriba nombre del producto...',
+                options:      this.filteredProducts(),
+                maxOptions:   50,
+                render: {
+                    option: function(data) {
+                        const price = data.sale_price !== null
+                            ? `<span class="text-xs font-bold text-gray-500 ml-2">Bs ${parseFloat(data.sale_price).toFixed(2)}</span>`
+                            : '';
+                        const peps = data.use_batches
+                            ? `<span class="ml-1 text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">PEPS</span>`
+                            : '';
+                        return `<div class="flex items-center gap-1">${data.name}${peps}${price}</div>`;
+                    },
+                    item: function(data) {
+                        return `<div>${data.name}</div>`;
+                    },
+                },
+                onChange(value) {
+                    if (!value) { self.selectedProduct = null; self.barcodeQuery = ''; return; }
+                    const p = self.allProducts.find(p => p.id == value);
+                    if (!p) return;
+                    self.selectedProduct = p;
+                    // Fill barcode with first barcode of this product
+                    self.barcodeQuery = p.barcodes.length > 0 ? p.barcodes[0] : '';
+                    self.barcodeNotFound = false;
+                },
+            });
+
+            // Disable if no location
+            if (!this.locationId) this.tsInstance.disable();
+        },
+
+        filteredProducts() {
+            return this.allProducts.filter(p => {
+                if (this.categoryFilter && p.category_id != this.categoryFilter) return false;
+                return true;
+            });
+        },
+
+        applyFilters() {
+            if (!this.tsInstance) return;
+            const filtered = this.filteredProducts();
+            this.tsInstance.clearOptions();
+            this.tsInstance.addOptions(filtered);
+            this.tsInstance.refreshOptions(false);
+        },
+
+        // ─── Barcode input ────────────────────────────────────────────────
+        onBarcodeInput() {
+            this.barcodeNotFound = false;
+            const code = this.barcodeQuery.trim();
+            if (!code) { return; }
+            // Find product matching this barcode
+            const found = this.allProducts.find(p =>
+                p.barcodes.some(b => b === code)
+            );
+            if (found) {
+                this.selectedProduct = found;
+                if (this.tsInstance) {
+                    this.tsInstance.setValue(found.id, true); // true = silent (no onChange loop)
+                }
+            }
+        },
+
+        onBarcodeEnter() {
+            const code = this.barcodeQuery.trim();
+            if (!code) return;
+            // Try to match barcode first
+            const byBarcode = this.allProducts.find(p => p.barcodes.some(b => b === code));
+            if (byBarcode) {
+                this.selectedProduct = byBarcode;
+                if (this.tsInstance) this.tsInstance.setValue(byBarcode.id, true);
+                this.addSelectedToCart();
+                return;
+            }
+            this.barcodeNotFound = true;
+        },
+
+        // ─── Cart ─────────────────────────────────────────────────────────
+        addSelectedToCart() {
+            if (!this.selectedProduct || !this.locationId) return;
+            const p   = this.selectedProduct;
+            const idx = this.cart.findIndex(l => l.product_id === p.id);
+            if (idx !== -1) {
+                this.cart[idx].qty = parseFloat(this.cart[idx].qty) + 1;
+            } else {
+                this.cart.push({
+                    product_id: p.id,
+                    name:       p.name,
+                    unit:       p.unit_of_measure || '',
+                    use_batches:p.use_batches,
+                    stock:      0,
+                    qty:        1,
+                    price:      p.sale_price !== null ? p.sale_price : 0,
+                });
+            }
+            // Reset selector and barcode for next scan
+            this.selectedProduct = null;
+            this.barcodeQuery    = '';
+            this.barcodeNotFound = false;
+            if (this.tsInstance) this.tsInstance.clear(true);
+            this.$nextTick(() => this.$refs.barcodeInput?.focus());
+        },
+
+        clearCart() {
+            this.cart       = [];
+            this.clientName = '';
+            this.clientNit  = '';
+            this.errorMsg   = null;
+        },
+
+        // ─── Sale submission ──────────────────────────────────────────────
+        async confirmSale() {
+            if (this.cart.length === 0 || !this.locationId || this.submitting) return;
+            this.submitting = true;
+            this.errorMsg   = null;
+            try {
+                const r = await fetch(this.storeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept':       'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                    },
+                    body: JSON.stringify({
+                        location_id: parseInt(this.locationId),
+                        client_name: this.clientName || null,
+                        client_nit:  this.clientNit  || null,
+                        lines: this.cart.map(l => ({
+                            product_id: l.product_id,
+                            quantity:   parseFloat(l.qty)   || 0,
+                            unit_price: parseFloat(l.price) || 0,
+                        })),
+                    }),
+                });
+                const data = await r.json();
+                if (r.ok && data.success) {
+                    this.lastDoc    = data.doc_number;
+                    this.lastDocUrl = data.show_url;
+                    this.cart       = [];
+                    this.clientName = '';
+                    this.clientNit  = '';
+                    if (this.tsInstance) this.tsInstance.clear(true);
+                    this.barcodeQuery = '';
+                    this.$nextTick(() => this.$refs.barcodeInput?.focus());
+                } else if (r.status === 422 && data.errors) {
+                    this.errorMsg = Object.values(data.errors).flat().join(' | ');
+                } else {
+                    this.errorMsg = data.message ?? 'Error al procesar la venta.';
+                }
+            } catch(e) {
+                this.errorMsg = 'Error de conexión. Intente nuevamente.';
+            }
+            this.submitting = false;
+        },
+
+        fmt(v) { return 'Bs. ' + (parseFloat(v) || 0).toFixed(2); },
+    };
+}
+</script>
+@endpush

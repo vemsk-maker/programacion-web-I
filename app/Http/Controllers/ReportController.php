@@ -12,7 +12,7 @@ use App\Models\MovementGroup;
 use App\Models\Product;
 use App\Models\StockCache;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
@@ -151,6 +151,7 @@ class ReportController extends Controller
     {
         $locationId = $request->input('location_id');
         $categoryId = $request->input('category_id');
+        $productId  = $request->input('product_id');
         $export     = $request->boolean('export');
         $canCost    = $this->canSeeCosts();
 
@@ -171,6 +172,7 @@ class ReportController extends Controller
             ->where('sc.quantity', '>', 0)
             ->when($locationId, fn ($q) => $q->where('sc.location_id', $locationId))
             ->when($categoryId, fn ($q) => $q->where('p.category_id', $categoryId))
+            ->when($productId,  fn ($q) => $q->where('sc.product_id', $productId))
             ->select(
                 'p.id as product_id',
                 'p.name as product',
@@ -209,6 +211,10 @@ class ReportController extends Controller
         $rows       = $query->paginate(50)->withQueryString();
         $locations  = Location::where('active', true)->orderBy('name')->get(['id', 'name']);
         $categories = Category::whereNull('parent_id')->orderBy('name')->get(['id', 'name']);
+        $products   = Product::with('barcodes:product_id,barcode')
+                        ->where('active', true)
+                        ->orderBy('name')
+                        ->get(['id', 'name']);
 
         $totalValue = $canCost
             ? DB::table('stock_cache as sc')
@@ -218,12 +224,13 @@ class ReportController extends Controller
                 ->where('sc.quantity', '>', 0)
                 ->when($locationId, fn ($q) => $q->where('sc.location_id', $locationId))
                 ->when($categoryId, fn ($q) => $q->where('p.category_id', $categoryId))
+                ->when($productId,  fn ($q) => $q->where('sc.product_id', $productId))
                 ->sum(DB::raw('sc.quantity * COALESCE(im2.unit_cost, 0)'))
             : null;
 
         return view('reports.stock', compact(
-            'rows', 'locations', 'categories',
-            'locationId', 'categoryId', 'canCost', 'totalValue'
+            'rows', 'locations', 'categories', 'products',
+            'locationId', 'categoryId', 'productId', 'canCost', 'totalValue'
         ));
     }
 
@@ -302,7 +309,7 @@ class ReportController extends Controller
     // =========================================================================
     // Private: CSV streaming helper
     // =========================================================================
-    private function exportCsv(string $filename, array $headers, array $rows): Response
+    private function exportCsv(string $filename, array $headers, array $rows): StreamedResponse
     {
         return response()->streamDownload(function () use ($headers, $rows) {
             $handle = fopen('php://output', 'w');

@@ -12,9 +12,8 @@
                 'product_id'      => $line['product_id'] ?? '',
                 'product_name'    => $product?->name ?? '',
                 'use_batches'     => (bool) ($product?->use_batches ?? false),
-                'search'          => $product?->name ?? '',
-                'results'         => [],
-                'showResults'     => false,
+                'barcodeQuery'    => $product?->barcodes?->first()?->barcode ?? '',
+                'barcodeNotFound' => false,
                 'batch_code'      => $line['batch_code'] ?? '',
                 'expiration_date' => $line['expiration_date'] ?? '',
                 'quantity'        => $line['quantity'] ?? '',
@@ -65,68 +64,7 @@
     @endif
 
     <form method="POST" action="{{ route('inventory.purchases.store') }}"
-          x-data="{
-              products:       window.__purchaseData.products,
-              categories:     window.__purchaseData.categories,
-              lines:          window.__purchaseData.lines,
-              categoryFilter: '',
-              priceMin:       '',
-              priceMax:       '',
-              init() {
-                  if (this.lines.length === 0) this.addLine();
-              },
-              newLine() {
-                  return {
-                      product_id: '', product_name: '', use_batches: false,
-                      search: '', results: [], showResults: false,
-                      batch_code: '', expiration_date: '',
-                      quantity: '', unit_cost: '',
-                  };
-              },
-              addLine()    { this.lines.push(this.newLine()); },
-              removeLine(i){ if (this.lines.length > 1) this.lines.splice(i, 1); },
-              searchProduct(i) {
-                  const q   = this.lines[i].search.toLowerCase().trim();
-                  const cat = this.categoryFilter;
-                  const min = this.priceMin !== '' ? parseFloat(this.priceMin) : null;
-                  const max = this.priceMax !== '' ? parseFloat(this.priceMax) : null;
-                  if (q.length < 1 && !cat && min === null && max === null) {
-                      this.lines[i].results    = [];
-                      this.lines[i].showResults = false;
-                      return;
-                  }
-                  this.lines[i].results = this.products
-                      .filter(p => {
-                          const matchText = q.length < 1 ||
-                              p.name.toLowerCase().includes(q) ||
-                              p.barcodes.some(b => b.toLowerCase().includes(q));
-                          const matchCat  = !cat || p.category_id == cat;
-                          const matchMin  = min === null || (p.sale_price !== null && p.sale_price >= min);
-                          const matchMax  = max === null || (p.sale_price !== null && p.sale_price <= max);
-                          return matchText && matchCat && matchMin && matchMax;
-                      })
-                      .slice(0, 10);
-                  this.lines[i].showResults = this.lines[i].results.length > 0;
-              },
-              selectProduct(i, p) {
-                  this.lines[i].product_id   = p.id;
-                  this.lines[i].product_name = p.name;
-                  this.lines[i].use_batches  = p.use_batches;
-                  this.lines[i].search       = p.name;
-                  this.lines[i].showResults  = false;
-                  this.lines[i].results      = [];
-                  this.lines[i].batch_code      = '';
-                  this.lines[i].expiration_date = '';
-              },
-              lineSubtotal(l) {
-                  return ((parseFloat(l.quantity) || 0) * (parseFloat(l.unit_cost) || 0)).toFixed(2);
-              },
-              get total() {
-                  return this.lines.reduce((s, l) =>
-                      s + (parseFloat(l.quantity) || 0) * (parseFloat(l.unit_cost) || 0), 0
-                  ).toFixed(2);
-              },
-          }"
+          x-data="purchaseForm()"
           class="space-y-6">
         @csrf
 
@@ -212,35 +150,26 @@
             </div>
         </div>
 
-        {{-- ── Filtros de producto ── --}}
+        {{-- ── Filtro por categoría ── --}}
         <div class="rounded-[2.5rem] border border-gray-100 bg-white px-8 py-5 shadow-sm">
-            <p class="mb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Filtros de búsqueda</p>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div class="sm:col-span-1">
-                    <label class="mb-1 block text-xs font-bold text-[#1e293b]">Categoría</label>
-                    <div class="relative">
-                        <select x-model="categoryFilter"
-                            class="h-9 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all">
-                            <option value="">Todas las categorías</option>
-                            <template x-for="cat in categories" :key="cat.id">
-                                <option :value="cat.id" x-text="cat.name"></option>
-                            </template>
-                        </select>
-                        <span class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400">
-                            <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </span>
-                    </div>
+            <div class="flex items-center gap-3">
+                <label class="shrink-0 text-[10px] font-black uppercase tracking-widest text-gray-400">Filtrar por categoría</label>
+                <div class="relative flex-1 max-w-xs">
+                    <select x-model="categoryFilter" @change="applyFilter()"
+                        class="h-9 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 px-3 pr-8 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all">
+                        <option value="">Todas las categorías</option>
+                        <template x-for="cat in categories" :key="cat.id">
+                            <option :value="cat.id" x-text="cat.name"></option>
+                        </template>
+                    </select>
+                    <span class="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
                 </div>
-                <div>
-                    <label class="mb-1 block text-xs font-bold text-[#1e293b]">Precio venta mín. (Bs)</label>
-                    <input type="number" x-model="priceMin" min="0" step="0.01" placeholder="0.00"
-                        class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
-                </div>
-                <div>
-                    <label class="mb-1 block text-xs font-bold text-[#1e293b]">Precio venta máx. (Bs)</label>
-                    <input type="number" x-model="priceMax" min="0" step="0.01" placeholder="0.00"
-                        class="h-9 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none transition-all" />
-                </div>
+                <button type="button" x-show="categoryFilter" @click="categoryFilter = ''; applyFilter()"
+                    class="shrink-0 text-xs font-bold text-gray-400 hover:text-[#e11d48] transition-colors">
+                    Limpiar
+                </button>
             </div>
         </div>
 
@@ -275,47 +204,35 @@
                         </div>
 
                         <div class="grid gap-5">
-                            {{-- Búsqueda de producto --}}
-                            <div>
-                                <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
-                                    Producto <span class="text-[#e11d48]">*</span>
-                                </label>
-                                <div class="relative" @click.outside="line.showResults = false">
-                                    <input type="text"
-                                        x-model="line.search"
-                                        @input="searchProduct(i)"
-                                        @focus="if(line.search.length > 0) searchProduct(i)"
-                                        placeholder="Buscar por nombre o código de barras..."
-                                        autocomplete="off"
-                                        class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all" />
-
+                            {{-- Selector de producto (Tom Select) + Código de barras --}}
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                        Producto <span class="text-[#e11d48]">*</span>
+                                    </label>
+                                    <select :id="'ts-line-' + i" class="ts-purchase-line"></select>
                                     <input type="hidden" :name="`lines[${i}][product_id]`" :value="line.product_id" />
-
-                                    <div x-show="line.showResults"
-                                         class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-lg">
-                                        <template x-for="result in line.results" :key="result.id">
-                                            <button type="button"
-                                                @click="selectProduct(i, result)"
-                                                class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                                                <div class="flex-1 min-w-0">
-                                                    <span class="block truncate font-semibold" x-text="result.name"></span>
-                                                    <template x-if="result.sale_price !== null">
-                                                        <span class="text-xs text-gray-400" x-text="'Bs ' + result.sale_price.toFixed(2)"></span>
-                                                    </template>
-                                                </div>
-                                                <span x-show="result.use_batches"
-                                                    class="inline-flex items-center rounded-lg bg-gray-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-gray-500">
-                                                    PEPS
-                                                </span>
-                                            </button>
-                                        </template>
-                                    </div>
                                 </div>
-
-                                <p x-show="line.product_id && !line.showResults"
-                                   class="mt-1.5 text-xs font-bold text-emerald-600">
-                                    ✓ <span x-text="line.product_name"></span>
-                                </p>
+                                <div>
+                                    <label class="mb-1.5 block text-sm font-bold text-[#1e293b]">
+                                        Código de barras
+                                        <span class="ml-1 text-xs font-medium text-gray-400">(escaneo o manual)</span>
+                                    </label>
+                                    <input type="text"
+                                        :id="'bc-line-' + i"
+                                        x-model="line.barcodeQuery"
+                                        @keydown.enter.prevent="onBarcodeEnterLine(i)"
+                                        @input="onBarcodeInputLine(i)"
+                                        placeholder="Escanee o escriba el código..."
+                                        autocomplete="off"
+                                        class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 font-mono text-sm text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none transition-all" />
+                                    <p x-show="line.barcodeNotFound" class="mt-1 text-xs font-bold text-[#e11d48]">
+                                        Código no encontrado en el catálogo.
+                                    </p>
+                                    <p class="mt-1 text-[11px] text-gray-400" x-show="!line.barcodeNotFound">
+                                        Presione <kbd class="rounded border border-gray-200 px-1 font-mono text-[10px]">Enter</kbd> para seleccionar por barcode. Compatible con lectores USB.
+                                    </p>
+                                </div>
                             </div>
 
                             {{-- Campos de lote --}}
@@ -406,3 +323,195 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+    .ts-wrapper.single .ts-control {
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        padding: 0 1rem;
+        height: 2.75rem;
+        font-size: 0.875rem;
+        color: #374151;
+        box-shadow: none;
+        cursor: pointer;
+    }
+    .ts-wrapper.single .ts-control:focus-within { border-color: #9ca3af; }
+    .ts-dropdown { border-radius: 0.75rem; border: 1px solid #f3f4f6; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); z-index: 9999; }
+    .ts-dropdown .option { padding: 0.6rem 1rem; font-size: 0.875rem; }
+    .ts-dropdown .option.active { background: #f9fafb; color: #1e293b; }
+    .ts-dropdown .option:hover { background: #f3f4f6; }
+</style>
+
+<script>
+const __allProducts   = window.__purchaseData.products;
+const __allCategories = window.__purchaseData.categories;
+
+// Tom Select instances keyed by line index
+const __tsInstances = {};
+
+function purchaseForm() {
+    return {
+        products:       __allProducts,
+        categories:     __allCategories,
+        lines:          window.__purchaseData.lines,
+        categoryFilter: '',
+
+        init() {
+            if (this.lines.length === 0) this.addLine();
+            this.$nextTick(() => {
+                this.lines.forEach((_, i) => this.initTs(i));
+            });
+        },
+
+        newLine() {
+            return {
+                product_id: '', product_name: '', use_batches: false,
+                batch_code: '', expiration_date: '',
+                quantity: '', unit_cost: '',
+                barcodeQuery: '', barcodeNotFound: false,
+            };
+        },
+
+        onBarcodeInputLine(i) {
+            this.lines[i].barcodeNotFound = false;
+            const code = this.lines[i].barcodeQuery.trim();
+            if (!code) return;
+            const found = __allProducts.find(p => p.barcodes.some(b => b === code));
+            if (found) {
+                this._selectProductOnLine(i, found);
+            }
+        },
+
+        onBarcodeEnterLine(i) {
+            const code = this.lines[i].barcodeQuery.trim();
+            if (!code) return;
+            const found = __allProducts.find(p => p.barcodes.some(b => b === code));
+            if (found) {
+                this._selectProductOnLine(i, found);
+                return;
+            }
+            this.lines[i].barcodeNotFound = true;
+        },
+
+        _selectProductOnLine(i, p) {
+            this.lines[i].product_id   = p.id;
+            this.lines[i].product_name = p.name;
+            this.lines[i].use_batches  = p.use_batches;
+            this.lines[i].barcodeNotFound = false;
+            if (__tsInstances[i]) __tsInstances[i].setValue(p.id, true);
+        },
+
+        addLine() {
+            this.lines.push(this.newLine());
+            this.$nextTick(() => this.initTs(this.lines.length - 1));
+        },
+
+        removeLine(i) {
+            if (this.lines.length <= 1) return;
+            if (__tsInstances[i]) { __tsInstances[i].destroy(); delete __tsInstances[i]; }
+            this.lines.splice(i, 1);
+            // Re-index remaining instances
+            this.$nextTick(() => {
+                const newInstances = {};
+                this.lines.forEach((_, idx) => {
+                    const el = document.getElementById('ts-line-' + idx);
+                    if (el && !el.tomselect) this.initTs(idx);
+                    else if (el?.tomselect) newInstances[idx] = el.tomselect;
+                });
+            });
+        },
+
+        filteredProducts() {
+            if (!this.categoryFilter) return this.products;
+            return this.products.filter(p => p.category_id == this.categoryFilter);
+        },
+
+        applyFilter() {
+            const filtered = this.filteredProducts();
+            Object.keys(__tsInstances).forEach(i => {
+                const ts = __tsInstances[i];
+                const current = this.lines[i]?.product_id;
+                ts.clearOptions();
+                ts.addOptions(filtered);
+                ts.refreshOptions(false);
+                // Keep current selection if still in filtered list
+                if (current && filtered.some(p => p.id == current)) {
+                    ts.setValue(current, true);
+                } else if (current) {
+                    ts.clear(true);
+                    this.lines[i].product_id   = '';
+                    this.lines[i].product_name = '';
+                    this.lines[i].use_batches  = false;
+                }
+            });
+        },
+
+        initTs(i) {
+            const self = this;
+            const el = document.getElementById('ts-line-' + i);
+            if (!el || el.tomselect) return;
+
+            const ts = new TomSelect(el, {
+                valueField:  'id',
+                labelField:  'name',
+                searchField: ['name'],
+                placeholder: 'Buscar por nombre...',
+                options:     this.filteredProducts(),
+                maxOptions:  50,
+                render: {
+                    option(data) {
+                        const price = data.sale_price !== null
+                            ? `<span style="font-size:11px;color:#9ca3af;margin-left:6px">Bs ${parseFloat(data.sale_price).toFixed(2)}</span>`
+                            : '';
+                        const peps = data.use_batches
+                            ? `<span style="font-size:10px;font-weight:700;color:#d97706;background:#fef3c7;padding:1px 6px;border-radius:4px;margin-left:4px">PEPS</span>`
+                            : '';
+                        return `<div style="display:flex;align-items:center;gap:4px">${data.name}${peps}${price}</div>`;
+                    },
+                    item(data) { return `<div>${data.name}</div>`; },
+                },
+                onChange(value) {
+                    if (!value) {
+                        self.lines[i].product_id   = '';
+                        self.lines[i].product_name = '';
+                        self.lines[i].use_batches  = false;
+                        self.lines[i].barcodeQuery = '';
+                        return;
+                    }
+                    const p = __allProducts.find(p => p.id == value);
+                    if (!p) return;
+                    self.lines[i].product_id      = p.id;
+                    self.lines[i].product_name    = p.name;
+                    self.lines[i].use_batches     = p.use_batches;
+                    self.lines[i].barcodeQuery    = p.barcodes.length > 0 ? p.barcodes[0] : '';
+                    self.lines[i].barcodeNotFound = false;
+                    self.lines[i].batch_code      = '';
+                    self.lines[i].expiration_date = '';
+                },
+            });
+
+            // Pre-select if line already has a product (old() repopulation)
+            if (this.lines[i]?.product_id) {
+                ts.setValue(this.lines[i].product_id, true);
+            }
+
+            __tsInstances[i] = ts;
+        },
+
+        lineSubtotal(l) {
+            return ((parseFloat(l.quantity) || 0) * (parseFloat(l.unit_cost) || 0)).toFixed(2);
+        },
+        get total() {
+            return this.lines.reduce((s, l) =>
+                s + (parseFloat(l.quantity) || 0) * (parseFloat(l.unit_cost) || 0), 0
+            ).toFixed(2);
+        },
+    };
+}
+</script>
+@endpush
